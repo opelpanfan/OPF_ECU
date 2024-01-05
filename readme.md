@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 
 # CORE 48 v2.1 a/b/c
@@ -256,3 +257,15 @@ https://opelpanfan.github.io/CORE48/core48_21.html
 
 
 
+=======
+
+# CORE 48
+
+## Versions
+
+| Version | Link |
+| ------ | ------ |
+| v1.1 | https://github.com/opelpanfan/CORE48/tree/core48_11 |
+| v2.0 | https://github.com/opelpanfan/CORE48/tree/core48_20 |
+| v2.1 | https://github.com/opelpanfan/CORE48/tree/core48_21 |
+>>>>>>> 38c9a5c5f60ea858505ce08ab5f69837a3801b70
