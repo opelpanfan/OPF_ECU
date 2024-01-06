@@ -108,7 +108,7 @@ https://opelpanfan.github.io/CORE48/core48_21.html
 | C5 | PA5  | Analog Inputs 5 (A5)	 |FUEL PRESSURE		| HALL 3 (PE9)	                            |
 | C6 | PA6  | Analog Inputs 6 (A6)	 |SPARE ANALOG INPUT|                                           |
 | C7 | PA3  | Analog Inputs 7 (A3)	 |SPARE ANALOG INPUT|                                           |
-| C8 | PD14 | High Side 9 (D14)		 |TACHO		        | PULLUP +5v or +12v depends on selection   |
+| C8 | PD14 | Low Side 9 (D14 TACHO)		 |TACHO		        | PULLUP +5v or +12v depends on selection   |
 
 
 ## PCB Layout
