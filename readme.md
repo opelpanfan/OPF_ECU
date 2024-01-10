@@ -1,6 +1,6 @@
 
 
-# OPF 48 v2.1 a/b/c
+# CORE 48 v2.1 a/b/c
 
 ![image](https://github.com/opelpanfan/CORE48/assets/12942077/5bdb0bb8-2ab7-4919-9121-8c81560b6320)
 
