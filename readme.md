@@ -28,10 +28,8 @@
 ## Speeduino Firmware
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://opelpanfan.github.io/OPF_ECU/teensy48_36/speeduino/speeduino_firmware.hex)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_firmware.hex)
 <!-- END LATEST DOWNLOAD BUTTON -->
-
-https://opelpanfan.github.io/OPF_ECU/teensy48_36/speeduino/speeduino_firmware.hex
 
 ## Speeduino TunerStudio INI
 <a href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_tunerstudio.ini">
