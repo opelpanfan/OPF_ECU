@@ -10,7 +10,7 @@
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20TunerStudio%20INI-blue?style=for-the-badge&logo=download&logoColor=white "Download FOME TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24c/fome/fome_tunerstudio.ini)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download FOME TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24c/fome/fome_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## RUSEFI Firmware
@@ -21,7 +21,7 @@
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20TunerStudio%20INI-blue?style=for-the-badge&logo=download&logoColor=white "Download RusEFI TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24c/rusefi/rusefi_tunerstudio.ini)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download RusEFI TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24c/rusefi/rusefi_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 
@@ -33,10 +33,14 @@
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20TunerStudio%20INI-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24c/speeduino/speeduino_tunerstudio.ini)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download Speeduino TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24c/speeduino/speeduino_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Interactive Pinout Manual 
 
-https://opelpanfan.github.io/OPF_ECU/core8_24c.html
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Pinout%20Manual-black?style=for-the-badge&logo=download&logoColor=white "Pinout Manual")](https://opelpanfan.github.io/OPF_ECU/core48_21.html)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+
 
