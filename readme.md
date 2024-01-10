@@ -1,6 +1,6 @@
 
 
-# Teensy 48
+# OPF 48 v2.1 a/b/c
 
 ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/5bdb0bb8-2ab7-4919-9121-8c81560b6320)
 
@@ -23,13 +23,21 @@
 
 ## Firmware
 
+## FOME (RUSEFI fork) Firmware
+
+https://github.com/opelpanfan/OPF_ECU/tree/core48_21/fome
+
+## RUSEFI Firmware
+
+https://github.com/opelpanfan/OPF_ECU/tree/core48_21/rusefi
+
 ## Speeduino Firmware
 
-https://github.com/opelpanfan/OPF_ECU/tree/teensy48_36/speeduino
+https://github.com/opelpanfan/OPF_ECU/tree/core48_21/speeduino
 
 ## Interactive Pinout Manual 
 
-https://opelpanfan.github.io/OPF_ECU/teensy48_36.html
+https://opelpanfan.github.io/OPF_ECU/core48_21.html
 
 ### Black Connector
 
@@ -101,4 +109,150 @@ https://opelpanfan.github.io/OPF_ECU/teensy48_36.html
 | C6 | PA6  | Analog Inputs 6 (A6)	 |SPARE ANALOG INPUT|                                           |
 | C7 | PA3  | Analog Inputs 7 (A3)	 |SPARE ANALOG INPUT|                                           |
 | C8 | PD14 | Low Side 9 (D14 TACHO)		 |TACHO		        | PULLUP +5v or +12v depends on selection   |
+
+
+## PCB Layout
+
+### :warning: **Please check the connector pinout table as some silk prints on the PCB are wrong.**
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/3469a74a-7623-40d8-a7de-25a0a55c2823)
+
+## Solder jumper configuration
+
+| Switch ID | Link to Connector | Image  | RED | BLUE	 | GREEN |
+| ------ | ------ | ------ | ------ | ------ |  ------ |
+| SW1   | B_B5  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/1757576a-7584-4ea2-9035-57acbbaf3b19)  | Knock 2 (C1)  | Analog Inputs 9 (A1) | Digital Input 3 (D3) |
+| SW2   | B_C6  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/1b31a344-36ec-4790-a561-0a1140de30eb)  | Digital Input 4 (D2)   | Analog Inputs 8 (A4) | Knock 1 (C0) |
+| SW3   | B_B3  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/711358c0-e6ea-4739-a8e7-d2e205c731dd)  | USB D+  | Digital Input 1 (D5) | CAN LOW |
+| SW4   | B_B2  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/13c2c3d5-92b9-4165-abd7-87adfbc2b485)  | CAN HIGH  | Digital Input 2 (D4) | USB D- |
+| SW5   | B_B1  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/f82bcf90-6858-464f-9b6d-c5ac517da40f)  | Low Side 11 (G2)  | DBW+ |  |
+| SW6   | B_C1  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/f0aa1e6a-c734-4d53-98a2-01fd3d8e0ee6)  | Low Side 10 (D15)  | DBW- |  |
+| SW7   | B_C8  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/4ac00500-5d3b-4104-9123-b3110029daaf)  | TACHO PULL UP to +12v  | TACHO PULL UP to +5v |  |
+| SW8   | COIL Signal  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/ce27c313-928a-4be8-b1f0-466bbbb1c55b) | COIL Trigger +12v  | COIL Trigger +5v |  |
+
+### VR Trigger Configuration
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/76f164eb-7be7-466e-9e0a-0189acd6b181) 
+
+### HALL Trigger Configuration
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/5c0ed98f-dc9c-4850-972a-7a3a368713a3)
+
+### SW10 and SW11: Analogue input PULLUP resistors (2.49k) to +5V for Temperature Sensor
+
+>Analogue input pull up settings to use for temperature inputs:
+>Most of Analogue inputs can be used as temperature inputs with 2.49Kohm pull up to +5v resistors.
+>These resistors can be enabled by flipping toggle switch to ON position.
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/feb964ff-f6d2-4a99-856c-991d7fd84f30)
+
+### SW12 Digital Input PULLUP resistors (680k) to +5v
+
+>Digital input 680kohm pull up resistors to +5v.
+>If your digital input requires pull up resistor taht can be enabled by flipping toggle switch to ON possition.
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/7b24b38e-0779-4887-ad61-4abda1b18171)
+
+### SW9 CAN bus terminator Resistors and Knock Audio Filters
+
+>1. toggle switch is to ON possition to enable 120ohm terminating resistor on CAN1
+>2. toggle switch is to ON possition to enable 120ohm terminating resistor on CAN2
+>3. toggle switch is to ON possition to enable 3.3nF filter capacitor on KNOCK 1 Input
+>4. toggle switch is to ON possition to enable 3.3nF filter capacitor on KNOCK 2 Input
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/d3dc0053-40e4-4aa0-af15-56401b117058)
+
+## Additional Connectors
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/232973ae-c908-4171-bbfc-a493dfd78635)
+
+
+### CAN Connector
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/1f331c42-2952-4920-9695-7dd1e4caabf2)
+
+| Pin   | STM32 PIN | Function  |
+| ------ | ------ | ------ |
+| 1 |  | CAN 1 LOW |
+| 2 |  | CAN 1 HIGH |
+| 3 |  | CAN 2 LOW |
+| 4 |  | CAN 2 HIGH |
+
+### USB Connector
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/d67afd6f-4710-4ef0-bb53-0fb0c96deeb1)
+
+| Pin   | STM32 PIN | Function  |
+| ------ | ------ | ------ |
+| 1 |  | USB +5V |
+| 2 |  | USB D- |
+| 3 |  | USB D+ |
+| 4 |  | GND |
+
+### Stepper Connector
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/c8108ecd-139e-4c5d-8e20-70fbb49c9b4d)
+
+| Pin   | STM32 PIN | Function  |
+| ------ | ------ | ------ |
+| 1 |  | STEP 1B |
+| 2 |  | STEP 1A |
+| 3 |  | STEP 2A |
+| 4 |  | STEP 2B |
+
+### VR3/VR4 Connector
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/c49c41fe-d15f-4377-80a0-b8a9ff652205)
+
+| Pin   | STM32 PIN | Function  |
+| ------ | ------ | ------ |
+| 1 | PE4/PF13  | VR3+/HALL5 (F13) |
+| 2 | PF14 | VR3-/HALL6 (F14) |
+| 3 | PF15 | VR4-/HALL8 (F15) |
+| 4 | PE5/PG0 | VR4+/HALL7 (G0) |
+
+### EGT Connector
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/1dcf5bb6-c38a-41e1-8293-b87aee4d508b)
+
+| Pin   | STM32 PIN | Function  |
+| ------ | ------ | ------ |
+| 1 |  | EGT1 T- |
+| 2 |  | EGT1 T+ |
+| 3 |  | EGT2 T- |
+| 4 |  | EGT2 T+ |
+
+### Knock/Serial Connector
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/24d01a55-a5b8-459b-b840-11c136f379a0)
+
+| Pin   | STM32 PIN | Function  |
+| ------ | ------ | ------ |
+| 1 |  | UART6 RX |
+| 2 |  | UART6 TX |
+| 3 |  | KNOCK 2 Audio |
+| 4 |  | KNOCK 1 Audio |
+
+### DBW Connector
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/c65efae5-5758-409d-acdc-784bcb1f960b)
+
+| Pin   | STM32 PIN | Function  |
+| ------ | ------ | ------ |
+| 1 |  | GND |
+| 2 |  | +5V |
+| 3 |  | ET- |
+| 4 |  | ET+ |
+| 5 |  | Analog Inputs 8 (A4) |
+| 6 |  | Analog Inputs 9 (A1) |
+
+### LSU Connector
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/63d5e15a-5c4e-44d1-8edd-1df03da7e6d4)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/05f5cd9a-93ac-4810-8be9-47d00f090758)
+
+| Pin   | STM32 PIN | Function  |
+| ------ | ------ | ------ |
+| 1 |  | LSU Connector 4 |
+| 2 |  | LSU Connector 3 |
+| 3 |  | LSU Connector 2 |
+| 4 |  | LSU Connector 1 |
+| 5 |  | LSU Connector 6 |
+| 6 |  | LSU Connector 5 |
+
+
+
 
