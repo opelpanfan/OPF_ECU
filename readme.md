@@ -45,23 +45,16 @@
 [![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20TunerStudio%20INI-blue?style=for-the-badge&logo=download&logoColor=white "Download RusEFI TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/rusefi/rusefi_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
-
 ## Speeduino Firmware
 
 (Right click and 'Save link as...')
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/speeduino/speeduino_firmware.hex)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/speeduino/speeduino_firmware.bin)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
 [![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20TunerStudio%20INI-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/speeduino/speeduino_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
-
-<!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20Teensy%20Flasher-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Teensy Flasher")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/speeduino/Speeduino%20Teensy%20Flasher.msi)
-<!-- END LATEST DOWNLOAD BUTTON -->
-
-
 ## Interactive Pinout Manual 
 
 https://opelpanfan.github.io/OPF_ECU/core48_21.html
