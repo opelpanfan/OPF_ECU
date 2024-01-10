@@ -2,7 +2,8 @@
 
 # Teensy 48
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/5bdb0bb8-2ab7-4919-9121-8c81560b6320)
+![PXL_20240110_124119080](https://github.com/opelpanfan/OPF_ECU/assets/12942077/a79a7790-c60c-4dd3-baf1-0e0608057663)
+
 
 ## Features
 
