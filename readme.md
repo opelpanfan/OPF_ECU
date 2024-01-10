@@ -18,7 +18,7 @@
 - Onboard Barometer
 
 ## Speeduino Firmware
-
+(Right mouse click and 'Save link as')
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
 [![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_firmware.hex)
 <!-- END LATEST DOWNLOAD BUTTON -->
