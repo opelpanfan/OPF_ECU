@@ -32,7 +32,7 @@
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Speeduino TunerStudio INI
-<a href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_tunerstudio.ini">
+<a href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_tunerstudio.ini" content-disposition: attachment>
   TunerStudio INI
 </a>
 
