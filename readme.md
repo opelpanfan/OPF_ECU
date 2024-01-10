@@ -20,7 +20,7 @@
 ## Firmware
 
 ## Speeduino Teensy Flasher
-<div align="center">
+<div>
 <a href="https://github.com/opelpanfan/OPF_ECU/blob/teensy48_36/speeduino/Speeduino%20Teensy%20Flasher.msi" target="_blank">
   https://github.com/opelpanfan/OPF_ECU/blob/teensy48_36/speeduino/Speeduino%20Teensy%20Flasher.msi
 </a>
