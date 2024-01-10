@@ -22,19 +22,19 @@
 ## Speeduino Teensy Flasher
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-SpeeduinoTeensyFlasher-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Teensy Flasher")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/Speeduino%20Teensy%20Flasher.msi)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20Teensy%20Flasher-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Teensy Flasher")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/Speeduino%20Teensy%20Flasher.msi)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Speeduino Firmware
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_firmware.hex)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_firmware.hex)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Speeduino TunerStudio INI
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_tunerstudio.ini)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-TunerStudio%20INI-blue?style=for-the-badge&logo=download&logoColor=white "Download TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Interactive Pinout Manual 
