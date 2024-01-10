@@ -34,7 +34,7 @@
 ## Speeduino TunerStudio INI
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_tunerstudio.ini)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Interactive Pinout Manual 
