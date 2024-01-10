@@ -35,3 +35,8 @@
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
 [![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20TunerStudio%20INI-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24c/speeduino/speeduino_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
+
+## Interactive Pinout Manual 
+
+https://opelpanfan.github.io/OPF_ECU/core8_24c.html
+
