@@ -25,9 +25,15 @@
   Speeduino Teensy Flasher
 </a>
 
-## Speeduino Firmware
+## Speeduino
 
-https://github.com/opelpanfan/OPF_ECU/tree/teensy48_36/speeduino
+<a id="raw-url" href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/tree/teensy48_36/speeduino/">
+  Firmware
+</a>
+
+<a id="raw-url" href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/tree/teensy48_36/speeduino/">
+  TunerStudio INI
+</a>
 
 ## Interactive Pinout Manual 
 
