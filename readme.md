@@ -22,7 +22,7 @@
 ## Speeduino Teensy Flasher
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino Teensy Flasher-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Teensy Flasher")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/Speeduino%20Teensy%20Flasher.msi)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-SpeeduinoTeensyFlasher-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Teensy Flasher")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/Speeduino%20Teensy%20Flasher.msi)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Speeduino Firmware
