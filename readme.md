@@ -25,15 +25,13 @@
   Speeduino Teensy Flasher
 </a>
 
-## Speeduino
-
-### Firmware
-<a href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/tree/teensy48_36/speeduino/speeduino_firmware.hex">
+## Speeduino Firmware
+<a href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_firmware.hex">
   Firmware
 </a>
 
-### TunerStudio INI
-<a href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_firmware.hex">
+## Speeduino TunerStudio INI
+<a href="https://raw.githubusercontent.com/opelpanfan/OPF_ECU/teensy48_36/speeduino/speeduino_tunerstudio.ini">
   TunerStudio INI
 </a>
 
