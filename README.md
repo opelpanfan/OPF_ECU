@@ -1,5 +1,5 @@
 
-# TEENSY 48
+# TEENSY_48
 
 ## Versions
 
@@ -8,7 +8,7 @@
 | v3.5 | https://github.com/opelpanfan/OPF_ECU/tree/teensy48_35 |
 | v3.6 | https://github.com/opelpanfan/OPF_ECU/tree/teensy48_36 |
 
-# TEENSY 56
+# TEENSY_56
 
 ## Versions
 
@@ -17,7 +17,7 @@
 | v3.5 | https://github.com/opelpanfan/OPF_ECU/tree/teensy56_35 |
 | v3.6 | https://github.com/opelpanfan/OPF_ECU/tree/teensy56_36 |
 
-# OPF 8
+# OPF_8 (aka Core8)
 
 ## Versions
 
@@ -28,7 +28,7 @@
 | v2.1 | https://github.com/opelpanfan/OPF_ECU/tree/core8_21 |
 
 
-# OPF 48
+# OPF_48 (aka Core48)
 
 ## Versions
 
