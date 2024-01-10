@@ -4,25 +4,27 @@
 
 ![PXL_20240110_124119080](https://github.com/opelpanfan/OPF_ECU/assets/12942077/a79a7790-c60c-4dd3-baf1-0e0608057663)
 
-
 ## Features
 
 - 8 Injectors
 - 8 Coils
 - 8 Low Side Switch
-- 4 VR / 8 Hall Triggers
+- 2 VR / 2 Hall Triggers
 - 4 Digital Inputs
-- 8 Analogue 0-5v inputs (all can be used as temperature inputs via 2.49k pull up resistor SW10 and SW11)
-- DBW
-- 2 Wideband (14point7)
-- 2 Canbus
-- 2 EGT
+- 8 Analogue 0-5v inputs
+- 1 Wideband (14point7)
+- 1 Canbus
 - 4bar map
 - Onboard Barometer
-- Onboard SD card/Removable SD Card
-- Bluetooth
 
 ## Firmware
+
+## Speeduino Teensy Flasher
+<div align="center">
+<a href="https://github.com/opelpanfan/OPF_ECU/blob/teensy48_36/speeduino/Speeduino%20Teensy%20Flasher.msi" target="_blank">
+  https://github.com/opelpanfan/OPF_ECU/blob/teensy48_36/speeduino/Speeduino%20Teensy%20Flasher.msi
+</a>
+</div>
 
 ## Speeduino Firmware
 
