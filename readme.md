@@ -34,10 +34,6 @@
 [![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download FOME TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/fome/fome_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
-<!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download FOME Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/fome/fome_console.zip)
-<!-- END LATEST DOWNLOAD BUTTON -->
-
 ## RUSEFI Firmware
 (Right click and 'Save link as...')
 
@@ -47,10 +43,6 @@
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
 [![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download RusEFI TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/rusefi/rusefi_tunerstudio.ini)
-<!-- END LATEST DOWNLOAD BUTTON -->
-
-<!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/rusefi/rusefi_console.zip)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Speeduino Firmware
