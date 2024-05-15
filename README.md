@@ -30,7 +30,8 @@
 
 ## Versions
 
-| Version | Link |
-| ------ | ------ |
-| v2.0 | https://github.com/opelpanfan/OPF_ECU/tree/core48_20 |
-| v2.1 | https://github.com/opelpanfan/OPF_ECU/tree/core48_21 |
+| Version  | Link |
+| ------   | ------ |
+| v2.0     | https://github.com/opelpanfan/OPF_ECU/tree/core48_20 |
+| v2.1     | https://github.com/opelpanfan/OPF_ECU/tree/core48_21 |
+| royalEFI | https://github.com/opelpanfan/OPF_ECU/tree/royalEFI |
