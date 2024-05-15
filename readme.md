@@ -2,8 +2,6 @@
 
 # royalEFI
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/5bdb0bb8-2ab7-4919-9121-8c81560b6320)
-
 ## Features
 
 - 8 Injectors
@@ -27,47 +25,36 @@
 (Right click and 'Save link as...')
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download FOME Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/fome/fome_firmware.bin)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download FOME Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI/fome/fome_firmware.bin)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download FOME TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/fome/fome_tunerstudio.ini)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download FOME TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI/fome/fome_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download FOME Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/fome/fome_console.zip)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download FOME Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI/fome/fome_console.zip)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## RUSEFI Firmware
 (Right click and 'Save link as...')
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/rusefi/rusefi_firmware.bin)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI/rusefi/rusefi_firmware.bin)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download RusEFI TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/rusefi/rusefi_tunerstudio.ini)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download RusEFI TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI/rusefi/rusefi_tunerstudio.ini)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/rusefi/rusefi_console.zip)
-<!-- END LATEST DOWNLOAD BUTTON -->
-
-## Speeduino Firmware
-
-(Right click and 'Save link as...')
-<!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download Speeduino Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/speeduino/speeduino_firmware.bin)
-<!-- END LATEST DOWNLOAD BUTTON -->
-
-<!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Speeduino%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download Speeduino TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_21/speeduino/speeduino_tunerstudio.ini)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI/rusefi/rusefi_console.zip)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ## Interactive Pinout Manual 
 
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
-[![Download zip](https://custom-icon-badges.demolab.com/badge/-Pinout%20Manual-black?style=for-the-badge&logo=download&logoColor=white "Pinout Manual")](https://opelpanfan.github.io/OPF_ECU/core48_21.html)
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Pinout%20Manual-black?style=for-the-badge&logo=download&logoColor=white "Pinout Manual")](https://opelpanfan.github.io/OPF_ECU/royalEFI.html)
 <!-- END LATEST DOWNLOAD BUTTON -->
 
 ### Black Connector
@@ -144,30 +131,46 @@
 
 ## PCB Layout
 
-### :warning: **Please check the connector pinout table as some silk prints on the PCB are wrong.**
+## TOP
+![front](https://github.com/opelpanfan/OPF_ECU/assets/12942077/39e08eaa-056f-47bf-bc9c-adae13f9d11d)
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/3469a74a-7623-40d8-a7de-25a0a55c2823)
+
+## BACK
+![back](https://github.com/opelpanfan/OPF_ECU/assets/12942077/b780d395-3b82-46ec-8465-948469103bc0)
+
 
 ## Solder jumper configuration
 
 | Switch ID | Link to Connector | Image  | RED | BLUE	 | GREEN |
 | ------ | ------ | ------ | ------ | ------ |  ------ |
-| SW1   | B_B5  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/1757576a-7584-4ea2-9035-57acbbaf3b19)  | Knock 2 (C1)  | Analog Inputs 9 (A1) | Digital Input 3 (D3) |
-| SW2   | B_C6  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/1b31a344-36ec-4790-a561-0a1140de30eb)  | Digital Input 4 (D2)   | Analog Inputs 8 (A4) | Knock 1 (C0) |
-| SW3   | B_B3  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/711358c0-e6ea-4739-a8e7-d2e205c731dd)  | USB D+  | Digital Input 1 (D5) | CAN LOW |
-| SW4   | B_B2  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/13c2c3d5-92b9-4165-abd7-87adfbc2b485)  | CAN HIGH  | Digital Input 2 (D4) | USB D- |
-| SW5   | B_B1  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/f82bcf90-6858-464f-9b6d-c5ac517da40f)  | Low Side 11 (G2)  | DBW+ |  |
-| SW6   | B_C1  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/f0aa1e6a-c734-4d53-98a2-01fd3d8e0ee6)  | Low Side 10 (D15)  | DBW- |  |
-| SW7   | B_C8  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/4ac00500-5d3b-4104-9123-b3110029daaf)  | TACHO PULL UP to +12v  | TACHO PULL UP to +5v |  |
-| SW8   | COIL Signal  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/ce27c313-928a-4be8-b1f0-466bbbb1c55b) | COIL Trigger +12v  | COIL Trigger +5v |  |
+| SW1   | B_B5  |  ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/a8f089bf-756e-499e-aeaf-23d290c80077)  | Knock 2 (C1)  | Analog Inputs 9 (A1) | Digital Input 3 (D3) |
+| SW2   | B_B4  |  ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/60eecaba-4185-443d-ba55-6d47e375f6af)  | Digital Input 4 (D2)   | Analog Inputs 8 (A4) | Knock 1 (C0) |
+| SW3   | B_B3  |  ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/7317de4f-f90f-421f-a8b6-e6b397e22e0e)  | CAN HIGH  | Digital Input 2 (D4) | USB D- |
+| SW4   | B_B2  |  ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/afe5f827-868f-4d1c-8b96-0ee988f302a9)  | USB D+  | Digital Input 1 (D5) | CAN LOW |
+| SW5   | B_B1  |  ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/3b56dfbf-93a3-4483-ab4d-dab7f33d0787)  | DBW+ | Low Side 11 (G2)   |  |
+| SW6   | B_C1  |  ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/4e700a4b-39fb-4627-a118-844ac0052b64)  | DBW- | Low Side 10 (D15)  |  |
+| TACHO | G_C8  |  ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/84274391-8342-446c-9d9b-830f0544a226)  | TACHO PULL UP to +12v  | TACHO PULL UP to +5v |  |
+| IGNITION OUTPUT | COIL Signal  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/120a9391-3466-4170-857a-9ee5fe4d4820)   | COIL Trigger +12v  | COIL Trigger +5v |  |
+
+## Solder jumper configuration for Additional Outputs
+| Switch ID | Link to Connector | Image  | RED | BLUE	 | GREEN |
+| ------ | ------ | ------ | ------ | ------ |  ------ |
+| O1 OUTPUT | B_A2  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/7721ebb9-10fd-4e13-b313-ce84879af818) | Low Side 13 (G4)  | O1 SWITCH |  |
+| O2 OUTPUT | B_A3  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/49f23855-923e-4ae0-8dd5-e888767934f4) | Low Side 14 (G5)  | O2 SWITCH |  |
+| O3 OUTPUT | B_A4  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/258e7309-b414-49b8-9f6e-34849ad63a73) | Low Side 15 (G6)  | O3 SWITCH |  |
+| O4 OUTPUT | B_C6  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/0dad5b56-ec19-4573-a50f-10c866ff9606) | Low Side 16 (G7)  | O4 SWITCH |  |
+| O1 SWITCH | O1 OUTPUT  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/80021f76-063c-4e8c-9625-203b20545482) | CAN HIGH  | STEP2 B | EGT1 - |
+| O2 SWITCH | O2 OUTPUT  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/212dd901-a98d-45c3-a89d-ebef2f109cac) | CAN LOW  | STEP2 A | EGT1 + |
+| O3 SWITCH | O3 OUTPUT  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/81efa24f-96f3-4bf1-8e74-566e5a6bd659) | USB D+  | STEP1 A | EGT2 - |
+| O4 SWITCH | O4 OUTPUT  | ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/fce76c37-d508-4bb1-8566-49ba7cb04fe6) | USB D-  | STEP1 B | EGT2 + |
 
 ### VR Trigger Configuration
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/76f164eb-7be7-466e-9e0a-0189acd6b181) 
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/83f4c142-d014-474f-8db0-7748346d7d1c)
 
 ### HALL Trigger Configuration
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/5c0ed98f-dc9c-4850-972a-7a3a368713a3)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/3e8c9698-e620-4e2e-aa5c-6c7e95a41adc)
 
 ### SW10 and SW11: Analogue input PULLUP resistors (2.49k) to +5V for Temperature Sensor
 
@@ -175,14 +178,14 @@
 >Most of Analogue inputs can be used as temperature inputs with 2.49Kohm pull up to +5v resistors.
 >These resistors can be enabled by flipping toggle switch to ON position.
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/feb964ff-f6d2-4a99-856c-991d7fd84f30)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/4b32ae2e-9675-4ed0-840b-b0a25cef0e7a)
 
 ### SW12 Digital Input PULLUP resistors (680k) to +5v
 
 >Digital input 680kohm pull up resistors to +5v.
 >If your digital input requires pull up resistor taht can be enabled by flipping toggle switch to ON possition.
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/7b24b38e-0779-4887-ad61-4abda1b18171)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/35bf0126-d9e4-4bc6-bb26-321129c39fa8)
 
 ### SW9 CAN bus terminator Resistors and Knock Audio Filters
 
@@ -191,15 +194,15 @@
 >3. toggle switch is to ON possition to enable 3.3nF filter capacitor on KNOCK 1 Input
 >4. toggle switch is to ON possition to enable 3.3nF filter capacitor on KNOCK 2 Input
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/d3dc0053-40e4-4aa0-af15-56401b117058)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/ff682a8b-d209-444a-9393-c2f8b3ee4286)
 
 ## Additional Connectors
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/232973ae-c908-4171-bbfc-a493dfd78635)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/97ef0acd-f3cf-4ad0-a3d1-6431f46757c7)
 
 
 ### CAN Connector
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/1f331c42-2952-4920-9695-7dd1e4caabf2)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/d09fa081-5cd6-4d9a-be30-1ee47d5a534f)
 
 | Pin   | STM32 PIN | Function  |
 | ------ | ------ | ------ |
@@ -209,7 +212,7 @@
 | 4 |  | CAN 2 HIGH |
 
 ### USB Connector
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/d67afd6f-4710-4ef0-bb53-0fb0c96deeb1)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/28440f01-4af8-4c36-8c39-1c8cbae31018)
 
 | Pin   | STM32 PIN | Function  |
 | ------ | ------ | ------ |
@@ -219,7 +222,7 @@
 | 4 |  | GND |
 
 ### Stepper Connector
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/c8108ecd-139e-4c5d-8e20-70fbb49c9b4d)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/e34e9e4d-1b7a-4d78-b032-acf8d3970b42)
 
 | Pin   | STM32 PIN | Function  |
 | ------ | ------ | ------ |
@@ -229,7 +232,7 @@
 | 4 |  | STEP 2B |
 
 ### VR3/VR4 Connector
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/c49c41fe-d15f-4377-80a0-b8a9ff652205)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/7487d04a-ca39-4ea0-89ba-61334c59820c)
 
 | Pin   | STM32 PIN | Function  |
 | ------ | ------ | ------ |
@@ -239,7 +242,7 @@
 | 4 | PE5/PG0 | VR4+/HALL7 (G0) |
 
 ### EGT Connector
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/1dcf5bb6-c38a-41e1-8293-b87aee4d508b)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/a79caca7-1704-4548-ba6f-a7a69c43e911)
 
 | Pin   | STM32 PIN | Function  |
 | ------ | ------ | ------ |
@@ -249,7 +252,7 @@
 | 4 |  | EGT2 T+ |
 
 ### Knock/Serial Connector
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/24d01a55-a5b8-459b-b840-11c136f379a0)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/a540029c-f379-491f-b8d2-05d715955fec)
 
 | Pin   | STM32 PIN | Function  |
 | ------ | ------ | ------ |
@@ -259,7 +262,7 @@
 | 4 |  | KNOCK 1 Audio |
 
 ### DBW Connector
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/c65efae5-5758-409d-acdc-784bcb1f960b)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/7795b322-d11e-4130-8336-8c679de8507d)
 
 | Pin   | STM32 PIN | Function  |
 | ------ | ------ | ------ |
@@ -272,7 +275,7 @@
 
 ### LSU Connector
 
-![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/63d5e15a-5c4e-44d1-8edd-1df03da7e6d4)
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/6e7645d5-8103-496a-bb16-77c106c47582)
 ![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/05f5cd9a-93ac-4810-8be9-47d00f090758)
 
 | Pin   | STM32 PIN | Function  |
