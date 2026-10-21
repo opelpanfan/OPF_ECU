@@ -149,6 +149,7 @@ jobs:
           REF: ${{ needs.check.outputs.ref }}
           VARIANT: ${{ needs.check.outputs.variant }}
           TOOLCHAIN_CACHE: ${{ env.TOOLCHAIN_DIR }}
+          REPRO_DEBUG: "1"
         run: |
           set -o pipefail
           scripts/fome/build_fome.sh --ref "$REF" --variant "$VARIANT" \

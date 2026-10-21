@@ -253,4 +253,15 @@ NOTES
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
   { echo "fome_commit=$FOME_SHA"; echo "signature=$SIG_INI"; echo "out=$OUT"; } >> "$GITHUB_OUTPUT"
 fi
+if [ "${REPRO_DEBUG:-0}" = 1 ]; then   # diagnostics for comparing builds across machines
+  log "repro-debug"; mkfs.fat --help 2>&1 | head -1 || true; "$REAL_ZIP" -v | sed -n 2p; mcopy -V | head -1; gcc --version | head -1
+  (cd "$FW" && sha256sum hw_layer/mass_storage/ramdisk_image*.h build/fome.bin build/fome.hex deliver/temp/* 2>/dev/null)
+  python3 - "$OUT/fome.bin" 4096 "$OUT/${VARIANT}_base_tune.bin" 256 <<'PY'
+import hashlib,sys
+for f,n in ((sys.argv[1],int(sys.argv[2])),(sys.argv[3],int(sys.argv[4]))):
+    try: d=open(f,'rb').read()
+    except OSError: continue
+    print(f, ' '.join(hashlib.sha256(d[i:i+n]).hexdigest()[:6] for i in range(0,len(d),n)))
+PY
+fi
 log "done -> $OUT"; ls -l "$OUT"; echo "SHA256SUMS:"; cat "$OUT/SHA256SUMS"
