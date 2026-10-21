@@ -14,6 +14,7 @@ The same script runs in GitHub Actions (`.github/workflows/fome-autobuild.yml`) 
 - `patches/*.patch` - applied (after the firmware build) so the FOME simulator compiles the
   board's `board_configuration.cpp` and applies its defaults (0001), and uses the same values as the
   real ECU where FOME's simulator differs (0002); used only for base-tune generation.
+- `stage_board_branch.sh` - copies a build into `fome/` of a board-branch checkout (used by CI).
 - `ts_read_page.py` - TunerStudio binary-protocol client (TCP simulator or serial ECU): signature + page.
 - `ini2msq.py` - page image + ini -> TunerStudio `.msq`, with a re-encode verification.
 - `setup_m32_sysroot.sh` - no-sudo alternative to `gcc-multilib` for the 32-bit simulator build.
@@ -33,6 +34,7 @@ base tune a 32-bit capable gcc (`gcc-multilib g++-multilib`) - or, without sudo,
 `eval $(scripts/fome/setup_m32_sysroot.sh)` once and keep `M32_SYSROOT` exported. `BASE_TUNE=0` skips it. Output (default
 `~/.cache/opf-fome-build/out/<variant>`): `fome.bin` (OpenBLT + FOME, flash at 0x08000000 via DFU),
 `fome_update.srec` (update through OpenBLT), `fome_bl.srec`, `fome.elf`, `fome_tunerstudio.ini`,
+`fome_console.zip` (FOME console, `CONSOLE=0` skips it),
 `<variant>_base_tune.msq` + `.bin` (board defaults as a TunerStudio tune), `SHA256SUMS`,
 `build-info.txt`, `release-notes.md`.
 
@@ -51,15 +53,21 @@ base tune a 32-bit capable gcc (`gcc-multilib g++-multilib`) - or, without sudo,
    (signature must equal the firmware ini), converts it to `<variant>_base_tune.msq` and verifies the
    msq re-encodes to the identical bytes. Then writes SHA256 sums and release notes.
 
-## CI
+## CI (`.github/workflows/fome-autobuild.yml`)
 
 Same structure as the rusEFI workflow (`scripts/rusefi/`):
-- schedule every 6h: if the latest FOME release has no `fome-<tag>-<variant>` release here, build and
-  publish it (GitHub runs schedules only from the default branch; variant from repo variable `FOME_VARIANT`).
-- workflow_dispatch: inputs `ref` (default `latest`), `variant` (default `core48_21`), `dry_run`
-  (default true = artifacts only, no release) and `force` (rebuild even if the release exists; never overwrites).
+- schedule every 6h: resolves the latest FOME release; if `fome/build-info.txt` on the board branch
+  (`core48_21`) has a different FOME commit, builds and commits the result there. GitHub runs schedules
+  only from the default branch (`main`), so this workflow file must be on `main` for the cron to fire.
+- workflow_dispatch: `ref` (default `latest`), `variant` (default `core48_21`), `dry_run` (default true =
+  artifacts only), `force` (rebuild/commit even if the board branch already has that commit).
 - push to `master-fome-grok` touching `scripts/fome/**` or the workflow: validation build, artifacts only.
-- Only `GITHUB_TOKEN` is used (`contents: read`, `contents: write` for the build job's release step).
+- Publishing = a normal commit on the board branch touching only `fome/` (`fome_firmware.bin`,
+  `fome_tunerstudio.ini`, `fome_console.zip` - the names the branch readme links to - plus
+  `fome_update.srec`, `fome_base_tune.msq`, `build-info.txt`, `SHA256SUMS`); rebase+retry if the branch
+  moved, never force-pushed. `rusefi/`, `speeduino/` and `readme.md` are left alone.
+- GitHub releases (`fome-<tag>-<variant>`) are off; set repo variable `FOME_CREATE_RELEASES=true` to enable.
+- Only `GITHUB_TOKEN` is used (`contents: read`; `contents: write` for the build job's publish steps).
 
 ## Reproducibility
 
