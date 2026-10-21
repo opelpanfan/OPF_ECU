@@ -40,10 +40,20 @@ index ba4a895..e062fa2 100644
  	config->mafDecodingBins[index] = voltage;
  	return index + 1;
 diff --git a/simulator/simulator/rusEfiFunctionalTest.cpp b/simulator/simulator/rusEfiFunctionalTest.cpp
-index 2751e17..54c58b3 100644
+index 2751e17..e2e20d6 100644
 --- a/simulator/simulator/rusEfiFunctionalTest.cpp
 +++ b/simulator/simulator/rusEfiFunctionalTest.cpp
-@@ -116,7 +116,9 @@ void rusEfiFunctionalTest(void) {
+@@ -105,7 +105,9 @@ void rusEfiFunctionalTest(void) {
+ 	initSdCardLogger();
+ #endif // EFI_FILE_LOGGING
+ 
++#ifndef SIM_WITH_BOARD_DEFAULTS // OPF base-tune build uses SSE float (like the ECU's FPU); this x87-tuned printf self-test does not apply
+ 	runChprintfTest();
++#endif
+ 
+ 	initMainLoop();
+ 
+@@ -116,7 +118,9 @@ void rusEfiFunctionalTest(void) {
  	void startSerialChannels();
  	startSerialChannels();
  
