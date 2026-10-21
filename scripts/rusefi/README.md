@@ -62,3 +62,9 @@ The pinned ARM toolchain (`arm-gnu-toolchain-14.2.rel1`, sha256-verified) is ins
 10. gradle wrapper `networkTimeout` 10000 -> 300000 (`patches/0001-...`).
 11. Base tune `.msq` via simulator (`patches/0002` makes the simulator's `setup_custom_board_overrides` weak).
 12. Build fails if the TunerStudio signature in the firmware/header differs from the generated `.ini`.
+
+## Verification (2026-10-21)
+
+Fresh clone of this branch, `build_rusefi_core48.sh --ref f9115629c6a1f75a2bd325c3cc447a8971c81746`:
+signature `rusEFI master.2026.10.21.core8.3847534957` and `.ini` identical to the manual local build;
+`.bin` identical except the 5-byte `__TIME__` string (now pinned via `SOURCE_DATE_EPOCH`).
