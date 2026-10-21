@@ -1,7 +1,7 @@
 /*
  * OPF (opelpanfan) board support for Speeduino on STM32F407 based OPF ECUs (core48, core8, ...).
- * Copied into the Speeduino source tree by build/build_speeduino.sh; compiled only when OPF_BOARD is defined
- * (set by the generated PlatformIO env from build/boards/<board>/speeduino/board.json).
+ * Copied into the Speeduino source tree by scripts/speeduino/build_speeduino.sh; compiled only when OPF_BOARD is defined
+ * (set by the generated PlatformIO env from scripts/speeduino/board-overlay/<variant>/board.json).
  */
 #ifndef OPF_BOARD_H
 #define OPF_BOARD_H

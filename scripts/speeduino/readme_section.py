@@ -5,10 +5,10 @@ Only the text between <!-- SPEEDUINO:START --> and <!-- SPEEDUINO:END --> is eve
 from <firmware_dir>/build-info.json and never hand-edited. Everything else (FOME:START/END, RUSEFI:START/END
 sections and all other text) is left byte-for-byte unchanged, line endings included.
 
-  fw_readme.py update   README --dir DIR --branch BR --repo OWNER/REPO [--server URL] --release-tag TAG
-  fw_readme.py check    OLD NEW       # exit 1 if anything outside the SPEEDUINO section differs
-  fw_readme.py current  README --tag T  # exit 0 if README has an up-to-date generated section for tag T
-  fw_readme.py render   ...same args as update...  # print the section only
+  readme_section.py update   README --dir DIR --branch BR --repo OWNER/REPO [--server URL] --release-tag TAG
+  readme_section.py check    OLD NEW       # exit 1 if anything outside the SPEEDUINO section differs
+  readme_section.py current  README --tag T  # exit 0 if README has an up-to-date generated section for tag T
+  readme_section.py render   ...same args as update...  # print the section only
 
 If README has no markers yet, the existing Speeduino block (the "## Speeduino ..." heading up to the next
 level-1/2 heading or other section marker, trailing blank lines excluded) is wrapped in the markers and its
@@ -209,7 +209,7 @@ def main():
             return cmd_check(a)
         return cmd_current(a)
     except Fail as e:
-        print("::error::fw_readme: %s" % str(e).splitlines()[0], file=sys.stderr)
+        print("::error::readme_section: %s" % str(e).splitlines()[0], file=sys.stderr)
         print(str(e), file=sys.stderr)
         return 1
 

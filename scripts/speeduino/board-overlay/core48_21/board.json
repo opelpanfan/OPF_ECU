@@ -1,5 +1,5 @@
 {
-  "_comment": "OPF core48 v2.1 (STM32F407ZGT6) Speeduino board definition. Consumed by build/build_speeduino.sh. Pin values are taken unchanged from legacy/board.ini (ECU_Build 63e9f3c).",
+  "_comment": "OPF core48 v2.1 (STM32F407ZGT6) Speeduino board definition. Consumed by scripts/speeduino/build_speeduino.sh. Pin values are taken unchanged from legacy/board.ini (ECU_Build 63e9f3c).",
   "name": "core48_21",
   "description": "OPF core48 v2.1 (STM32F407ZGT6)",
   "board_id": 59,
@@ -75,7 +75,7 @@
     "OPF_CAN2": "1"
   },
   "base_tune": {
-    "seed": "../../../speeduino/common/seed-base-tune-speeduino-202207.msq",
+    "seed": "../../base-tune/seed-base-tune-speeduino-202207.msq",
     "overrides": { "pinLayout": "\"CORE\"" }
   },
   "pin_notes": [
