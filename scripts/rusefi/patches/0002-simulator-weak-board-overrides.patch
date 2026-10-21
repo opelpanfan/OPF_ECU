@@ -1,0 +1,14 @@
+diff --git a/simulator/main.cpp b/simulator/main.cpp
+index a04ec8e..cdb51de 100644
+--- a/simulator/main.cpp
++++ b/simulator/main.cpp
+@@ -146,7 +146,8 @@ static inline void myCustomHello(){
+ 	efiPrintf("custom board hello from simulator");
+ }
+ 
+-void setup_custom_board_overrides(){
++// OPF: weak so a board_configuration.cpp compiled into the simulator (base tune) can provide its own
++__attribute__((weak)) void setup_custom_board_overrides(){
+ 	custom_board_boardSayHello = myCustomHello;
+ }
+ 
