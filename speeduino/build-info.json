@@ -5,9 +5,10 @@
   "speeduino_tag": "202501.7",
   "speeduino_commit": "cd3d0e38d276a7bd087a9dc86fd976780539ce8f",
   "speeduino_commit_date": "2026-04-24T17:45:45+10:00",
+  "build_date": "2026-10-21T14:53:00Z",
   "firmware_signature": "speeduino 202501",
   "ini_signature": "speeduino 202501",
-  "opf_ecu_commit": "1cf65fd60a20d60cbc864279b87d589c93717049",
+  "opf_ecu_commit": "b781aa994d7055e391907b4390c05d7859c62e88",
   "opf_build_dir_dirty": false,
   "platformio_version": "6.2.0",
   "platform_spec": "platformio/ststm32@19.5.0",
@@ -156,6 +157,6 @@
     "speeduino_firmware.hex": "448d4778fc80dc1d8041956306ce8a97670ef3d6cf31feda4cba7e85b1cd51d5",
     "speeduino_tunerstudio.ini": "3938058bc5c3a2823e4dbdfc635a0012be6491de86cfd5996ad08b320b2c3027",
     "base-map.msq": "21328315e0649bcf52a1f89ab818d717f76f11eb2bd47c65dd7950ecff3a6dc5",
-    "opf-core48_21-speeduino-202501.7.patch": "ada8ea19335d3a3b3e749f37e4c9ad454818fb6f09c8275e9608e8a4c84f3139"
+    "opf-core48_21-speeduino-202501.7.patch": "5d3db4eada2c767366ab2bde5b46147826a93977223f9134348825d7c13fb3a1"
   }
 }
