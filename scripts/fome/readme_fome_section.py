@@ -25,7 +25,8 @@ def split(text):
         return text[:i], text[i:j], text[j:]
     m = LEGACY.search(text)
     if m:
-        n = re.compile(r'^## ', re.M).search(text, m.end())
+        # legacy block ends at the next heading or at another section's marker (e.g. <!-- RUSEFI:START -->)
+        n = re.compile(r'^(## |<!-- *[A-Z0-9_]+:(START|END) *-->)', re.M).search(text, m.end())
         k = n.start() if n else len(text)
         return text[:m.start()], text[m.start():k], text[k:]
     return None
@@ -72,6 +73,9 @@ def main():
         a, _ = read(sys.argv[2]); b, _ = read(sys.argv[3])
         pa, pb = split(a), split(b)
         strip = lambda p, t: (p[0].rstrip('\n'), p[2].lstrip('\n')) if p else (t, '')
+        others = lambda t: [l for l in re.findall(r'<!-- *[A-Z0-9_]+:(?:START|END) *-->', t) if 'FOME:' not in l]
+        if others(a) != others(b):
+            print('readme.md: other sections\' markers changed', file=sys.stderr); sys.exit(1)
         if strip(pa, a) != strip(pb, b):
             print('readme.md changed outside the FOME section', file=sys.stderr); sys.exit(1)
     else:
