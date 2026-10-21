@@ -1,0 +1,3 @@
+# Bumped to request a CI rebuild of the Speeduino autobuild (push trigger is path-filtered to scripts/speeduino/**).
+# Not used by the build.
+2026-10-21T17:41:12Z rebuild requested by Benas
