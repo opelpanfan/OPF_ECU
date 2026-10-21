@@ -4,7 +4,9 @@ name: Speeduino autobuild
 # Same structure as fome-autobuild.yml. Everything lives on branch master-speeduino-grok:
 # - push to master-speeduino-grok touching the build files: resolves the latest noisymime/speeduino release,
 #   builds every variant and publishes a GitHub Release "speeduino-<speeduinoTag>-<variant>" for each variant
-#   that does not have one yet (variants already released are skipped).
+#   that does not have one yet (variants already released are skipped), then commits the firmware files to
+#   the variant's firmware branch (board.json "firmware_branch", folder "firmware_dir", e.g. core48_21:speeduino/)
+#   when they are missing/outdated there. Only that folder is ever modified; plain push, never force.
 # - schedule / workflow_dispatch: GitHub only runs these for workflows on the repository's DEFAULT branch
 #   (main). While this file exists only on master-speeduino-grok they never fire; new upstream releases are
 #   picked up by the next push to this branch. If this workflow is ever copied to main, the daily schedule
@@ -62,6 +64,7 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
       any: ${{ steps.plan.outputs.any }}
       publish: ${{ steps.plan.outputs.publish }}
+      force: ${{ steps.plan.outputs.force }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,7 +100,18 @@ jobs:
             [ -f "build/boards/$v/speeduino/board.json" ] || { echo "::error::unknown variant $v"; exit 1; }
             if [ "$publish" = true ] && [ "$IN_FORCE" != "true" ] \
                && gh release view "speeduino-$tag_ref-$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-              echo "release speeduino-$tag_ref-$v already exists - skipping $v"; continue
+              # release exists: still build if the firmware branch does not carry this Speeduino tag yet
+              br=$(jq -r '.firmware_branch // empty' "build/boards/$v/speeduino/board.json")
+              dir=$(jq -r '.firmware_dir // "speeduino"' "build/boards/$v/speeduino/board.json")
+              have=""
+              if [ -n "$br" ]; then
+                have=$(gh api "repos/$GITHUB_REPOSITORY/contents/$dir/build-info.json?ref=$br" --jq .content 2>/dev/null \
+                       | base64 -d 2>/dev/null | jq -r '.speeduino_tag // empty' 2>/dev/null || true)
+              fi
+              if [ -z "$br" ] || [ "$have" = "$tag" ]; then
+                echo "release speeduino-$tag_ref-$v exists and ${br:-<no firmware branch>} is up to date - skipping $v"; continue
+              fi
+              echo "release speeduino-$tag_ref-$v exists, but $br:$dir/ has '${have:-nothing}' - building $v for the firmware branch"
             fi
             todo+=("$v")
           done
@@ -105,7 +119,7 @@ jobs:
           {
             echo "speeduino_tag=$tag"; echo "tag_ref=$tag_ref"; echo "matrix=$matrix"
             echo "any=$([ "$matrix" != "[]" ] && echo true || echo false)"
-            echo "publish=$publish"
+            echo "publish=$publish"; echo "force=$([ "$IN_FORCE" = true ] && echo true || echo false)"
           } >> "$GITHUB_OUTPUT"
           echo "### Speeduino autobuild plan" >> "$GITHUB_STEP_SUMMARY"
           echo "Speeduino tag \`$tag\`, variants \`$matrix\`, publish=$publish" >> "$GITHUB_STEP_SUMMARY"
@@ -187,8 +201,12 @@ jobs:
           TAG: speeduino-${{ needs.plan.outputs.tag_ref }}-${{ matrix.variant }}
           SPEEDUINO_TAG: ${{ needs.plan.outputs.speeduino_tag }}
           VARIANT: ${{ matrix.variant }}
+          FORCE: ${{ needs.plan.outputs.force }}
         run: |
           set -euo pipefail
+          if [ "$FORCE" != true ] && gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $TAG already exists - not modified (use force to refresh its assets)"; exit 0
+          fi
           python3 - <<'PYEOF' > notes.md
           import json, os
           d = json.load(open("out/build-info.json"))
@@ -213,3 +231,98 @@ jobs:
             gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
               --title "Speeduino $SPEEDUINO_TAG - $VARIANT" --notes-file notes.md "${files[@]}"
           fi
+
+  firmware-branch:
+    # Commit the firmware files to the variant's firmware branch (e.g. core48_21:speeduino/).
+    needs: [plan, build, release]
+    if: always() && needs.plan.outputs.publish == 'true' && needs.plan.outputs.any == 'true' && needs.build.result == 'success' && needs.release.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: build/boards
+          path: src
+      - id: map
+        run: |
+          set -euo pipefail
+          bj="src/build/boards/${{ matrix.variant }}/speeduino/board.json"
+          br=$(jq -r '.firmware_branch // empty' "$bj")
+          dir=$(jq -r '.firmware_dir // "speeduino"' "$bj")
+          [[ -z "$br" || "$br" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "::error::bad firmware_branch '$br'"; exit 1; }
+          [[ "$dir" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::bad firmware_dir '$dir'"; exit 1; }
+          echo "branch=$br" >> "$GITHUB_OUTPUT"; echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          [ -n "$br" ] || echo "no firmware_branch for ${{ matrix.variant }} - nothing to push"
+      - uses: actions/download-artifact@v4
+        if: steps.map.outputs.branch != ''
+        with:
+          name: speeduino-${{ needs.plan.outputs.tag_ref }}-${{ matrix.variant }}
+          path: out
+      - uses: actions/checkout@v4
+        if: steps.map.outputs.branch != ''
+        with:
+          ref: ${{ steps.map.outputs.branch }}
+          path: fw
+          fetch-depth: 50
+      - name: Commit firmware to ${{ steps.map.outputs.branch }}:${{ steps.map.outputs.dir }}/
+        if: steps.map.outputs.branch != ''
+        env:
+          BRANCH: ${{ steps.map.outputs.branch }}
+          DIR: ${{ steps.map.outputs.dir }}
+          VARIANT: ${{ matrix.variant }}
+          SPEEDUINO_TAG: ${{ needs.plan.outputs.speeduino_tag }}
+        run: |
+          set -euo pipefail
+          (cd out && sha256sum -c SHA256SUMS)
+          FILES="speeduino_firmware.bin speeduino_firmware.hex speeduino_tunerstudio.ini base-map.msq"
+          cd fw
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          only_dir() { # fail if anything outside $DIR/ differs between $1 and $2 (or the index when $2 is empty)
+            local bad
+            if [ -n "${2:-}" ]; then bad=$(git diff --name-only "$1" "$2" | grep -v "^$DIR/" || true)
+            else bad=$(git diff --cached --name-only "$1" | grep -v "^$DIR/" || true); fi
+            if [ -n "$bad" ]; then echo "::error::refusing to modify files outside $DIR/: $bad"; exit 1; fi
+          }
+
+          mkdir -p "$DIR"
+          for f in $FILES; do [ -f "../out/$f" ] && cp "../out/$f" "$DIR/$f"; done
+          git add -- $(for f in $FILES; do [ -f "$DIR/$f" ] && echo "$DIR/$f"; done)
+          if git diff --cached --quiet; then
+            echo "firmware files in $BRANCH:$DIR/ are unchanged - nothing to commit"; exit 0
+          fi
+          # checksums + build info for the files in this folder (only written when the firmware changed)
+          cp ../out/build-info.json "$DIR/build-info.json"
+          (cd "$DIR" && sha256sum $(for f in $FILES; do [ -f "$f" ] && echo "$f"; done) > SHA256SUMS && sha256sum -c --quiet SHA256SUMS)
+          git add -- "$DIR/build-info.json" "$DIR/SHA256SUMS"
+          only_dir HEAD
+          [ -z "$(git status --porcelain --untracked-files=all | grep -v " $DIR/" || true)" ] || { echo "::error::work tree has changes outside $DIR/"; git status --short; exit 1; }
+          git diff --cached --stat
+          git commit -q -m "Speeduino $SPEEDUINO_TAG for $VARIANT" \
+            -m "Built by speeduino-autobuild.yml from OPF_ECU ${GITHUB_SHA::10} (run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID). Only $DIR/ is modified."
+
+          for attempt in 1 2 3 4 5; do
+            if git push origin "HEAD:refs/heads/$BRANCH"; then pushed=true; break; fi
+            pushed=false
+            echo "push rejected (attempt $attempt) - fetching $BRANCH and rebasing"
+            sleep $((attempt * 5))
+            git fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH" || { git rebase --abort || true; echo "::error::rebase onto origin/$BRANCH failed"; exit 1; }
+            only_dir "origin/$BRANCH" HEAD
+          done
+          [ "$pushed" = true ] || { echo "::error::could not push to $BRANCH after 5 attempts"; exit 1; }
+          git fetch -q origin "$BRANCH"
+          only_dir "HEAD~1" HEAD
+          [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$BRANCH")" ] || echo "::warning::$BRANCH moved after our push"
+          {
+            echo "### Firmware pushed to \`$BRANCH:$DIR/\`"
+            echo "commit $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$(git rev-parse HEAD)"
+            echo '```'; git show --stat --format='%h %s' HEAD; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

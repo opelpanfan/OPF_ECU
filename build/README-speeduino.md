@@ -41,6 +41,14 @@ release yet (already released variants are skipped). Only `GITHUB_TOKEN` is used
 release job only). Toolchain pins: Python 3.12, PlatformIO 6.2.0, ststm32 19.5.0; `~/.platformio` and pip
 are cached.
 
+Firmware branch: after a publishing run, the `firmware-branch` job commits `speeduino_firmware.bin`,
+`speeduino_firmware.hex`, `speeduino_tunerstudio.ini`, `base-map.msq` (+ `SHA256SUMS`, `build-info.json`) to
+`<firmware_branch>:<firmware_dir>/` from board.json (core48_21 -> `core48_21:speeduino/`, the paths the branch
+readme links to). It only ever touches that folder (checked with a diff before commit and after rebase; the job
+fails otherwise), skips the commit when the firmware files are unchanged, and retries a rejected push up to 5
+times with fetch + rebase, never force. If the release already exists, a push run still builds a variant whose
+firmware branch does not carry the current Speeduino tag yet; the existing release is left untouched.
+
 Detecting new upstream releases automatically: GitHub runs `schedule` and `workflow_dispatch` only for
 workflows on the default branch (main), so on this branch alone the daily cron and the manual "Run workflow"
 button never fire. Until then a new Speeduino release is built by the next push to `master-speeduino-grok`

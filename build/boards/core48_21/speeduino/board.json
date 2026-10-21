@@ -7,6 +7,8 @@
   "pio_base_env": "black_F407VE",
   "pio_board": "black_f407zg",
   "mcu_guard": "STM32F407xx",
+  "firmware_branch": "core48_21",
+  "firmware_dir": "speeduino",
   "fuel_outputs": 8,
   "ign_outputs": 8,
   "has_rtc": 0,
