@@ -1,7 +1,8 @@
 # Auto-build FOME firmware (+ console, base tune) for OPF boards whenever FOME-Tech/fome-fw publishes a new
 # release, and commit the result to the board branch (<variant>, e.g. core48_21) under fome/.
 # Build logic lives in scripts/fome/build_fome.sh (same script for local builds); layout mirrors the rusEFI
-# workflow (scripts/rusefi/...). GitHub releases are disabled unless repo variable FOME_CREATE_RELEASES=true.
+# workflow (scripts/rusefi/...). Publishing (schedule on a new FOME release, or dispatch with dry_run=false)
+# = release fome-<tag>-<variant> + a commit to <variant>/fome; never done by hand.
 name: FOME auto-build
 
 on:
@@ -18,12 +19,12 @@ on:
         required: false
         default: core48_21
       dry_run:
-        description: "Build + upload artifacts only (no commit to the board branch, no release)"
+        description: "Build + upload artifacts only (no release, no commit to the board branch)"
         type: boolean
         required: false
         default: true
       force:
-        description: "Build/commit even if the board branch already has this FOME commit"
+        description: "Build/publish even if release fome-<tag>-<variant> exists (never overwrites the release)"
         type: boolean
         required: false
         default: false
@@ -78,9 +79,11 @@ jobs:
           commit=$(gh api "repos/FOME-Tech/fome-fw/commits/$ref" --jq .sha)
           # what the board branch (<variant>) currently has in fome/
           if gh api "repos/$GITHUB_REPOSITORY/branches/$variant" >/dev/null 2>&1; then branch=true; else branch=false; fi
-          have=$(gh api -H "Accept: application/vnd.github.raw" "repos/$GITHUB_REPOSITORY/contents/fome/build-info.txt?ref=$variant" 2>/dev/null \
+          have=$(gh api -H "Accept: application/vnd.github.raw" "repos/$GITHUB_REPOSITORY/contents/fome/fome_build_info.txt?ref=$variant" 2>/dev/null \
                  | sed -n 's/^fome_commit=//p' || true)
-          if [ -n "$have" ] && [ "$have" = "$commit" ]; then exists=true; else exists=false; fi
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then rel=true; else rel=false; fi
+          # already published = release exists and the board branch carries the same FOME commit
+          if [ "$rel" = true ] && [ "$have" = "$commit" ]; then exists=true; else exists=false; fi
           # ECU_Build is private (GITHUB_TOKEN cannot read it): board files are vendored in scripts/fome/board-overlay
           [ -f "scripts/fome/board-overlay/$variant/board.mk" ] || { echo "::error::scripts/fome/board-overlay/$variant missing"; exit 1; }
           # ARM toolchain FOME pins for this ref (cache key)
@@ -100,7 +103,7 @@ jobs:
             echo "ref=$ref"; echo "commit=$commit"; echo "variant=$variant"; echo "tag=$tag"; echo "toolchain=${toolchain:-unknown}"
             echo "build=$build"; echo "publish=$publish"
           } | tee -a "$GITHUB_OUTPUT"
-          echo "### FOME \`$ref\` (\`${commit:0:10}\`) / \`$variant\`: board branch has \`${have:-nothing}\` -> build=$build, commit to $variant/fome=$publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "### FOME \`$ref\` (\`${commit:0:10}\`) / \`$variant\`: release exists=$rel, board branch has \`${have:-nothing}\` -> build=$build, publish=$publish" >> "$GITHUB_STEP_SUMMARY"
 
   build:
     name: Build ${{ needs.check.outputs.tag }}
@@ -109,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: write   # only used to commit to the board branch (publish=true) / optional release
+      contents: write   # only used when publish=true (release + commit to the board branch)
     steps:
       - uses: actions/checkout@v4
 
@@ -190,28 +193,20 @@ jobs:
       - name: Commit firmware to ${{ needs.check.outputs.variant }}/fome
         if: needs.check.outputs.publish == 'true'
         env:
-          VARIANT: ${{ needs.check.outputs.variant }}
           REF: ${{ needs.check.outputs.ref }}
           COMMIT: ${{ needs.check.outputs.commit }}
+          VARIANT: ${{ needs.check.outputs.variant }}
         run: |
           set -euo pipefail
-          # normal commit on top of the board branch, fome/ only (rusefi/, speeduino/, readme.md untouched), never force-pushed
-          cd "$GITHUB_WORKSPACE/board-branch"
+          cd board-branch
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          for attempt in 1 2 3; do
-            "$GITHUB_WORKSPACE/scripts/fome/stage_board_branch.sh" "$GITHUB_WORKSPACE/out" .
-            git add -- fome
-            if git diff --cached --quiet; then echo "fome/ already up to date"; exit 0; fi
-            git commit -q -m "FOME $REF (${COMMIT:0:10}) for $VARIANT" \
-              -m "Built by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID from $GITHUB_SHA"
-            if git push origin "HEAD:$VARIANT"; then echo "pushed $(git rev-parse HEAD) to $VARIANT"; exit 0; fi
-            echo "push rejected (branch moved), rebasing"; git reset -q --hard "origin/$VARIANT"; git pull -q --ff-only origin "$VARIANT"
-          done
-          echo "::error::could not push to $VARIANT"; exit 1
+          # fome/ only (script refuses anything else), normal commit, fetch+rebase+retry x5, never force
+          "$GITHUB_WORKSPACE/scripts/fome/stage_board_branch.sh" "$GITHUB_WORKSPACE/out" . --push \
+            "FOME $REF (${COMMIT:0:10}) for $VARIANT - $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
-      - name: Publish GitHub release ${{ needs.check.outputs.tag }} (disabled unless vars.FOME_CREATE_RELEASES == 'true')
-        if: needs.check.outputs.publish == 'true' && vars.FOME_CREATE_RELEASES == 'true'
+      - name: Publish GitHub release ${{ needs.check.outputs.tag }}
+        if: needs.check.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.check.outputs.tag }}
