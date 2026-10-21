@@ -1,0 +1,185 @@
+name: FOME autobuild
+
+# Builds OPF ECU firmware (FOME) whenever FOME-Tech/fome-fw publishes a new release.
+# - schedule: daily poll; builds + publishes a GitHub Release "fome-<fomeTag>-<variant>" for every
+#   variant that does not have one yet. (Schedules only run from the repository's default branch.)
+# - workflow_dispatch: manual build of any FOME ref; publishing is opt-in.
+# - push to master-fome-grok touching the build files: validation build, never publishes.
+
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+    inputs:
+      fome_ref:
+        description: 'FOME tag / branch / commit SHA (empty = latest FOME release)'
+        required: false
+        default: ''
+      variants:
+        description: 'Comma-separated board variants from build/boards (e.g. core48_21)'
+        required: false
+        default: 'core48_21'
+      publish_release:
+        description: 'Create a GitHub Release with the artifacts'
+        type: boolean
+        default: false
+      force:
+        description: 'Rebuild/publish even if the release already exists'
+        type: boolean
+        default: false
+  push:
+    branches: [master-fome-grok]
+    paths:
+      - 'build/**'
+      - '.github/workflows/fome-autobuild.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fome-autobuild-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DEFAULT_VARIANTS: core48_21
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      fome_ref: ${{ steps.plan.outputs.fome_ref }}
+      tag_ref: ${{ steps.plan.outputs.tag_ref }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      any: ${{ steps.plan.outputs.any }}
+      publish: ${{ steps.plan.outputs.publish }}
+      toolchain: ${{ steps.plan.outputs.toolchain }}
+    steps:
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IN_REF: ${{ inputs.fome_ref }}
+          IN_VARIANTS: ${{ inputs.variants }}
+          IN_PUBLISH: ${{ inputs.publish_release }}
+          IN_FORCE: ${{ inputs.force }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          ref="${IN_REF:-}"
+          if [ -z "$ref" ]; then
+            ref=$(gh api repos/FOME-Tech/fome-fw/releases/latest --jq .tag_name)
+          fi
+          [ -n "$ref" ] || { echo "::error::could not resolve FOME ref"; exit 1; }
+          # Tag-safe name for releases/artifacts: release tags as-is, SHAs shortened
+          if [[ "$ref" =~ ^[0-9a-f]{40}$ ]]; then tag_ref=${ref:0:10}; else tag_ref=${ref//\//-}; fi
+
+          publish=false
+          case "$EVENT" in
+            schedule) publish=true ;;
+            workflow_dispatch) [ "$IN_PUBLISH" = "true" ] && publish=true ;;
+          esac
+
+          variants="${IN_VARIANTS:-$DEFAULT_VARIANTS}"
+          todo=()
+          for v in ${variants//,/ }; do
+            if [ "$publish" = true ] && [ "$IN_FORCE" != "true" ] \
+               && gh release view "fome-$tag_ref-$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "release fome-$tag_ref-$v already exists - skipping $v"; continue
+            fi
+            todo+=("$v")
+          done
+          matrix=$(printf '%s\n' "${todo[@]}" | jq -R . | jq -sc 'map(select(length>0))')
+
+          tc=$(curl -fsSL "https://raw.githubusercontent.com/FOME-Tech/fome-fw/$ref/firmware/use_arm_gcc.mk" \
+               | grep -oE 'arm-gnu-toolchain-[^ ]*-x86_64-arm-none-eabi' | grep -v darwin | head -1)
+          [ -n "$tc" ] || { echo "::error::could not determine FOME toolchain for $ref"; exit 1; }
+
+          {
+            echo "fome_ref=$ref"; echo "tag_ref=$tag_ref"; echo "matrix=$matrix"
+            echo "any=$([ "$matrix" != "[]" ] && echo true || echo false)"
+            echo "publish=$publish"; echo "toolchain=$tc"
+          } >> "$GITHUB_OUTPUT"
+          echo "### FOME autobuild plan" >> "$GITHUB_STEP_SUMMARY"
+          echo "FOME ref \`$ref\`, variants \`$matrix\`, publish=$publish, toolchain \`$tc\`" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      WORK: ${{ github.workspace }}/.work
+      TOOLCHAIN_CACHE: ${{ github.workspace }}/.toolchain
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install build tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends mtools dosfstools zip xxd
+
+      - name: Cache ARM toolchain (version pinned by FOME's use_arm_gcc.mk)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TOOLCHAIN_CACHE }}
+          key: arm-toolchain-${{ runner.os }}-${{ needs.plan.outputs.toolchain }}
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.gradle/jdks
+          key: gradle-${{ runner.os }}-${{ needs.plan.outputs.tag_ref }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Build
+        id: build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          bash build/build_fome.sh -b "${{ matrix.variant }}" -r "${{ needs.plan.outputs.fome_ref }}" \
+            -w "$WORK" -o "$GITHUB_WORKSPACE/out/${{ matrix.variant }}"
+          cat "out/${{ matrix.variant }}/build-info.txt" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fome-${{ needs.plan.outputs.tag_ref }}-${{ matrix.variant }}
+          path: out/${{ matrix.variant }}
+          if-no-files-found: error
+
+  release:
+    needs: [plan, build]
+    if: needs.plan.outputs.publish == 'true' && needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: fome-${{ needs.plan.outputs.tag_ref }}-${{ matrix.variant }}
+          path: out
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: fome-${{ needs.plan.outputs.tag_ref }}-${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/fome.bin out/fome_update.srec out/fome_bl.srec out/fome.elf \
+              out/fome_tunerstudio.ini out/SHA256SUMS out/build-info.txt --clobber -R "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "FOME ${{ needs.plan.outputs.tag_ref }} - ${{ matrix.variant }}" \
+              --notes-file out/release-notes.md \
+              out/fome.bin out/fome_update.srec out/fome_bl.srec out/fome.elf \
+              out/fome_tunerstudio.ini out/SHA256SUMS out/build-info.txt
+          fi
