@@ -1,0 +1,41 @@
+diff --git a/firmware/controllers/algo/engine_configuration.cpp b/firmware/controllers/algo/engine_configuration.cpp
+index c2e6034..692b4f5 100644
+--- a/firmware/controllers/algo/engine_configuration.cpp
++++ b/firmware/controllers/algo/engine_configuration.cpp
+@@ -615,8 +615,9 @@ void resetConfigurationExt(configuration_callback_t boardCallback, engine_type_e
+ 		boardCallback(engineConfiguration);
+ 	}
+ 
+-#if EFI_PROD_CODE
++#if EFI_PROD_CODE || defined(SIM_WITH_BOARD_DEFAULTS)
+ 	// call overrided board-specific configuration setup, if needed (for custom boards only)
++	// (SIM_WITH_BOARD_DEFAULTS: simulator built with a real board's defaults, OPF base-tune generation)
+ 	setBoardDefaultConfiguration();
+ 	setBoardConfigOverrides();
+ #endif
+diff --git a/simulator/Makefile b/simulator/Makefile
+index 8ebd389..98861c2 100644
+--- a/simulator/Makefile
++++ b/simulator/Makefile
+@@ -182,6 +182,7 @@ CSRC =  $(ALLCSRC) \
+ # C++ sources that can be compiled in ARM or THUMB mode depending on the global
+ # setting.
+ CPPSRC = $(ALLCPPSRC) \
++  $(if $(SIM_WITH_BOARD_DEFAULTS),$(BOARDCPPSRC)) \
+   $(CHIBIOS)/os/various/cpp_wrappers/ch.cpp \
+   $(HW_LAYER_DRIVERS_CPP) \
+   $(HW_LAYER_DRIVERS_CORE_CPP) \
+diff --git a/simulator/simulator/rusEfiFunctionalTest.cpp b/simulator/simulator/rusEfiFunctionalTest.cpp
+index 26db80b..2751e17 100644
+--- a/simulator/simulator/rusEfiFunctionalTest.cpp
++++ b/simulator/simulator/rusEfiFunctionalTest.cpp
+@@ -177,7 +177,8 @@ CANDriver* detectCanDevice(brain_pin_e pinRx, brain_pin_e pinTx) {
+ }
+ #endif // HAL_USE_CAN
+ 
+-void setBoardConfigOverrides() {}
++// weak: a real board's board_configuration.cpp may provide it (OPF base-tune build)
++__attribute__((weak)) void setBoardConfigOverrides() {}
+ 
+ void initBoardSensors() {
+ 	// Simulator gets battery voltage so it detects ignition-on

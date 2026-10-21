@@ -1,0 +1,55 @@
+diff --git a/firmware/controllers/algo/defaults/default_base_engine.cpp b/firmware/controllers/algo/defaults/default_base_engine.cpp
+index 67e9434..a093bc1 100644
+--- a/firmware/controllers/algo/defaults/default_base_engine.cpp
++++ b/firmware/controllers/algo/defaults/default_base_engine.cpp
+@@ -96,7 +96,7 @@ void setDefaultBaseEngine() {
+ 	engineConfiguration->etbMaximumPosition = 99;
+ 
+ 	// Check engine light
+-#if EFI_PROD_CODE
++#if EFI_PROD_CODE || defined(SIM_WITH_BOARD_DEFAULTS)
+ 	engineConfiguration->warningPeriod = 10;
+ #else
+ 	engineConfiguration->warningPeriod = 0;
+diff --git a/firmware/controllers/algo/engine_configuration.cpp b/firmware/controllers/algo/engine_configuration.cpp
+index 692b4f5..44b40bf 100644
+--- a/firmware/controllers/algo/engine_configuration.cpp
++++ b/firmware/controllers/algo/engine_configuration.cpp
+@@ -536,7 +536,7 @@ static void setDefaultEngineConfiguration() {
+ 	engineConfiguration->baroSensor.lowValue = 0;
+ 	engineConfiguration->baroSensor.highValue = 500;
+ 
+-#if EFI_PROD_CODE
++#if EFI_PROD_CODE || defined(SIM_WITH_BOARD_DEFAULTS)
+ 	engineConfiguration->engineChartSize = 300;
+ #else
+ 	// need more events for automated test
+diff --git a/firmware/controllers/sensors/impl/maf.cpp b/firmware/controllers/sensors/impl/maf.cpp
+index ba4a895..e062fa2 100644
+--- a/firmware/controllers/sensors/impl/maf.cpp
++++ b/firmware/controllers/sensors/impl/maf.cpp
+@@ -1,6 +1,10 @@
+ #include "pch.h"
+ 
+ static int addMafPoint(int index, float kgHrValue, float voltage) {
++#if defined(SIM_WITH_BOARD_DEFAULTS)
++	// OPF base-tune generation: negative float -> uint32 saturates to 0 on the ARM FPU (vcvt), but wraps on x86
++	if (kgHrValue < 0) kgHrValue = 0;
++#endif
+ 	config->mafDecoding[index] = kgHrValue;
+ 	config->mafDecodingBins[index] = voltage;
+ 	return index + 1;
+diff --git a/simulator/simulator/rusEfiFunctionalTest.cpp b/simulator/simulator/rusEfiFunctionalTest.cpp
+index 2751e17..54c58b3 100644
+--- a/simulator/simulator/rusEfiFunctionalTest.cpp
++++ b/simulator/simulator/rusEfiFunctionalTest.cpp
+@@ -116,7 +116,9 @@ void rusEfiFunctionalTest(void) {
+ 	void startSerialChannels();
+ 	startSerialChannels();
+ 
++#ifndef SIM_WITH_BOARD_DEFAULTS // OPF base-tune generation: keep the ECU default
+ 	engineConfiguration->enableVerboseCanTx = true;
++#endif
+ 
+ #if HAL_USE_CAN
+ 	// Set CAN device name
