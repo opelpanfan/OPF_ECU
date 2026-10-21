@@ -124,6 +124,7 @@ for t in objcopy objdump; do ln -sf "$TC/bin/arm-none-eabi-$t" "$SHIMS/$t"; done
 # zip copies of the inputs with mtime = SOURCE_DATE_EPOCH and without extra (uid/atime) fields.
 REAL_ZIP=$(PATH="${PATH//$SHIMS:/}" command -v zip)
 REAL_GZIP=$(PATH="${PATH//$SHIMS:/}" command -v gzip)
+REAL_MCOPY=$(PATH="${PATH//$SHIMS:/}" command -v mcopy)
 cat > "$SHIMS/zip" <<SHIM
 #!/bin/bash
 set -euo pipefail
@@ -139,6 +140,18 @@ exec "$REAL_ZIP" -X "\${args[@]}"
 SHIM
 chmod +x "$SHIMS/zip"
 printf '#!/bin/sh\nexec "%s" -n "$@"\n' "$REAL_GZIP" > "$SHIMS/gzip"; chmod +x "$SHIMS/gzip"  # no name/mtime in gzip header
+# FAT directory timestamps in the USB image: older mtools (Ubuntu 24.04: 4.0.43) stamp "now"; set the source
+# files' mtime to SOURCE_DATE_EPOCH and copy with -m (keep mtime) so every mtools version writes the same image
+cat > "$SHIMS/mcopy" <<SHIM
+#!/bin/bash
+prev=""
+for a in "\$@"; do
+  if [ "\$prev" != -i ] && [ -f "\$a" ] && [[ "\$a" != ::* ]]; then touch -d "@\${SOURCE_DATE_EPOCH}" "\$a"; fi
+  prev=\$a
+done
+exec "$REAL_MCOPY" -m "\$@"
+SHIM
+chmod +x "$SHIMS/mcopy"
 export PATH="$SHIMS:$PATH"
 log "toolchain: $("${TRGT}gcc" --version | head -1)"
 
@@ -208,7 +221,7 @@ if [ "${BASE_TUNE:-1}" = 1 ]; then
   done
   mkdir -p "$FOME/simulator/build" && echo done > "$FOME/simulator/build/java_tools.cookie"
   make -C "$FOME/simulator" -j"$JOBS" BOARD_DIR="../firmware/config/boards/$FOME_BOARD" PROJECT_BOARD="$FOME_BOARD" \
-       SIM_WITH_BOARD_DEFAULTS=1 SANITIZE=no RUSEFI_OPT="-DSIM_WITH_BOARD_DEFAULTS $M32_OPT" > "$WORK/simulator_build.log" 2>&1 \
+       SIM_WITH_BOARD_DEFAULTS=1 SANITIZE=no RUSEFI_OPT="-DSIM_WITH_BOARD_DEFAULTS -msse2 -mfpmath=sse $M32_OPT" > "$WORK/simulator_build.log" 2>&1 \
     || { tail -30 "$WORK/simulator_build.log"; die "simulator build failed (log: $WORK/simulator_build.log)"; }
   SIMDIR=$(mktemp -d); PAGE_SIZE=$(grep -m1 -oE '^pageSize\s*=\s*[0-9]+' "$OUT/fome_tunerstudio.ini" | grep -oE '[0-9]+$')
   (cd "$SIMDIR" && exec "$FOME/simulator/build/fome_simulator" 60 > "$SIMDIR/sim.log" 2>&1) & SIMPID=$!
