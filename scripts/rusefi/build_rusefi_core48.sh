@@ -153,8 +153,9 @@ if [ ! -x "$TC_BIN/arm-none-eabi-gcc" ]; then
   rm -f "$tarball"
 fi
 export PATH="$TC_BIN:$PATH"
-arm-none-eabi-gcc --version | head -1
-arm-none-eabi-gcc --version | grep -q '14\.2\.1' || die "unexpected arm-none-eabi-gcc version"
+GCC_VER=$(arm-none-eabi-gcc --version)   # no early-closing pipes under pipefail (SIGPIPE)
+echo "${GCC_VER%%$'\n'*}"
+[[ "$GCC_VER" == *14.2.1* ]] || die "unexpected arm-none-eabi-gcc version"
 
 # ---- ECU_Build board config -------------------------------------------------
 if [ -z "$BOARD_SRC" ] && [ -z "$ECU_BUILD_DIR" ] && [ -d "$SCRIPT_DIR/board-overlay/$VARIANT" ]; then
@@ -266,8 +267,8 @@ CK=$(printf '0x%X' $((0x$BASE + 0x1C)))
 log "Checking TunerStudio signature"
 INI="tunerstudio/generated/rusefi_${SHORT_BOARD_NAME}.ini"
 [ -f "$INI" ] || die "missing $INI"
-INI_SIG=$(sed -nE 's/^[[:space:]]*signature[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$INI" | head -1)
-HDR_SIG=$(sed -nE 's/^#define[[:space:]]+TS_SIGNATURE[[:space:]]+"([^"]+)".*/\1/p' "controllers/generated/signature_${SHORT_BOARD_NAME}.h" 2>/dev/null | head -1 || true)
+INI_SIG=$(sed -nE '0,/^[[:space:]]*signature[[:space:]]*=/s/^[[:space:]]*signature[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$INI")
+HDR_SIG=$(sed -nE 's/^#define[[:space:]]+TS_SIGNATURE[[:space:]]+"([^"]+)".*/\1/p' "controllers/generated/signature_${SHORT_BOARD_NAME}.h" 2>/dev/null || true)
 [ -n "$INI_SIG" ] || die "no signature= in $INI"
 if ! LC_ALL=C grep -aqF -- "$INI_SIG" build/rusefi.bin; then
   echo "ini signature : $INI_SIG"; echo "fw signatures :"; strings -n 12 build/rusefi.bin | grep -E "^rusEFI .*\.${SHORT_BOARD_NAME}\." || true
@@ -311,11 +312,12 @@ MK
   [ -f "$SIM/generated/simulator_tune_image.bin" ] || die "simulator did not write generated/simulator_tune_image.bin"
   ( cd "$RUSEFI_DIR" && ./gradlew --no-daemon -q :tune-tools:shadowJar )
   # output folder must be relative to simulator/ (tune-tools prefixes ROOT_FOLDER=../simulator/)
+  mkdir -p "$SIM/generated/opf"
   ( cd "$SIM" && DEFAULT_TUNE_OUTPUT_FOLDER=generated/opf/ bash write_tune.sh "../firmware/$INI" >write_tune.log 2>&1 ) || {
     tail -30 "$SIM/write_tune.log"; die "write_tune.sh failed"; }
   MSQ="$SIM/generated/opf/simulator_tune.msq"
   [ -s "$MSQ" ] || die "no base tune produced"
-  MSQ_SIG=$(sed -nE 's/.*signature="([^"]+)".*/\1/p' "$MSQ" | head -1)
+  MSQ_SIG=$(sed -nE '0,/signature="/s/.*signature="([^"]+)".*/\1/p' "$MSQ")
   [ "$MSQ_SIG" = "$INI_SIG" ] || die "base tune signature '$MSQ_SIG' != ini '$INI_SIG'"
   echo "OK: base tune $(grep -c '<constant' "$MSQ") constants, signature $MSQ_SIG"
 fi
@@ -340,7 +342,7 @@ fi
   echo "ts_signature=$INI_SIG"
   echo "signature_branch=$SIG_BRANCH"
   echo "toolchain=$TOOLCHAIN_NAME"
-  echo "java=$(java -version 2>&1 | head -1)"
+  JV=$(java -version 2>&1); echo "java=${JV%%$'\n'*}"
   echo "source_date_epoch=$SOURCE_DATE_EPOCH"
   echo "built_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 } > "$OUT/${PREFIX}.build-info.txt"
