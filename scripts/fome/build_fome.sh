@@ -22,6 +22,7 @@
 #                      scripts/fome/setup_m32_sysroot.sh, no sudo needed)
 #   M32_SYSROOT        extracted 32-bit libc/libstdc++ dev files used when gcc -m32 is not installed
 #   SOURCE_DATE_EPOCH  reproducible-build timestamp (default: FOME commit time)
+#   CONSOLE=1|0        also build fome_console.zip (default 1)
 set -euo pipefail
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -30,7 +31,7 @@ log() { echo "==> $*"; }
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 VARIANT=core48_21; FOME_REF=""; BOARDS_DIR="$SCRIPT_DIR/board-overlay"
 WORK="${HOME}/.cache/opf-fome-build"; OUT=""; JOBS=$(nproc); RESOLVE_ONLY=0
-usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; }
 while [ $# -gt 0 ]; do case "$1" in
   --ref|-r) FOME_REF=$2; shift 2;; --variant|-b) VARIANT=$2; shift 2;; --work|-w) WORK=$2; shift 2;;
   --out|-o) OUT=$2; shift 2;; --jobs|-j) JOBS=$2; shift 2;; --overlay-dir|-c) BOARDS_DIR=$2; shift 2;;
@@ -84,7 +85,8 @@ export TZ=UTC
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git -C "$FOME" log -1 --format=%ct HEAD)}"
 
 # ---- submodules: only what the firmware build needs -------------------------------------------
-SKIP="unit_tests/googletest java_console/luaformatter misc/hex2dfu"
+SKIP="unit_tests/googletest misc/hex2dfu"
+[ "${CONSOLE:-1}" = 1 ] || SKIP="$SKIP java_console/luaformatter"   # luaformatter is needed by the console
 [ "${USE_BUNDLED_TOOLCHAIN:-0}" = 1 ] || SKIP="$SKIP firmware/ext/build-tools"
 SUBS=$(git -C "$FOME" config -f .gitmodules --get-regexp '\.path$' | awk '{print $2}' | grep -vxF -f <(tr ' ' '\n' <<<"$SKIP"))
 log "submodules: $(echo $SUBS)"
@@ -179,6 +181,18 @@ SIG_BIN=$(strings -n 8 "$OUT/fome.bin" | grep -m1 -F "$SIG_INI" || true)
 [ -n "$SIG_INI" ] && [ "$SIG_BIN" = "$SIG_INI" ] || die "signature mismatch: ini='$SIG_INI' bin='$SIG_BIN'"
 log "signature OK: $SIG_INI"
 
+# ---- FOME console (fome_console.zip = misc/console_launcher + fome_console.jar, as ECU_Build did) ----
+if [ "${CONSOLE:-1}" = 1 ]; then
+  log "building FOME console"
+  (cd "$FOME/java_tools" && ./gradlew -q --console=plain :ui:shadowJar) || die "console build failed"
+  [ -f "$FOME/java_console_binary/fome_console.jar" ] || die "fome_console.jar missing"
+  CST=$(mktemp -d); cp "$FOME"/misc/console_launcher/* "$FOME/java_console_binary/fome_console.jar" "$CST/"
+  find "$CST" -type f -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
+  rm -f "$OUT/fome_console.zip"
+  (cd "$CST" && ls | LC_ALL=C sort | "$REAL_ZIP" -q -X "$OUT/fome_console.zip" -@) || die "console zip failed"
+  rm -rf "$CST"
+fi
+
 # ---- base tune: FOME simulator built with this board's defaults -> page image -> .msq -----------
 if [ "${BASE_TUNE:-1}" = 1 ]; then
   log "base tune: building simulator with $VARIANT board defaults"
@@ -208,7 +222,7 @@ if [ "${BASE_TUNE:-1}" = 1 ]; then
     || die "msq verification failed"
 fi
 
-(cd "$OUT" && sha256sum fome.bin fome_update.srec fome_bl.srec fome.elf fome_tunerstudio.ini *_base_tune.msq *_base_tune.bin 2>/dev/null > SHA256SUMS)
+(cd "$OUT" && sha256sum fome.bin fome_update.srec fome_bl.srec fome.elf fome_tunerstudio.ini fome_console.zip *_base_tune.msq *_base_tune.bin 2>/dev/null > SHA256SUMS)
 cat > "$OUT/build-info.txt" <<INFO
 variant=$VARIANT
 fome_board=$FOME_BOARD
@@ -216,7 +230,7 @@ fome_ref=$FOME_REF
 fome_commit=$FOME_SHA
 signature=$SIG_INI
 toolchain=$PLATFORM
-config_source=$BOARDS_DIR/$VARIANT
+config_source=${BOARDS_DIR#$(dirname "$(dirname "$SCRIPT_DIR")")/}/$VARIANT
 built_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 source_date_epoch=$SOURCE_DATE_EPOCH
 INFO
