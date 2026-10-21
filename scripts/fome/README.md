@@ -70,7 +70,8 @@ Same structure as the rusEFI workflow (`scripts/rusefi/`):
     `fome_tunerstudio.ini`, `fome_console.zip`, `fome_base_tune.msq`, `fome_build_info.txt`, `SHA256SUMS`.
     The script refuses if anything outside `fome/` changes; push rejections -> fetch + rebase + retry (5x),
     never force. `rusefi/`, `speeduino/` and everything else are never touched;
-  - `readme.md`: only the FOME section between `<!-- FOME:START -->` / `<!-- FOME:END -->` is rewritten
+  - `readme.md`: only the FOME section between `<!-- FOME:START -->` / `<!-- FOME:END -->` is rewritten,
+    same badge style as before (firmware .bin, ini, console - upstream FOME still ships a console)
     (`readme_fome_section.py`; the first publish wraps the existing unmarked FOME block). Any readme diff
     outside the markers makes the script refuse.
 - Only `GITHUB_TOKEN` is used (`contents: read`; `contents: write` for the build job's publish steps).
