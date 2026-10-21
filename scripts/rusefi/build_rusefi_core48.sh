@@ -24,7 +24,8 @@
 #                        scripts/rusefi/board-overlay/<variant> (committed, used by CI) > ECU_Build clone
 #   --signature-branch N branch name embedded in the TS signature ("rusEFI <N>.<date>.core8.<hash>");
 #                        default: the ref for branches/tags, "master" for commit shas
-#   --with-console       also build rusefi_console.jar (slower)
+#   --with-console       also build the console (rusefi_console.zip = misc/console_launcher +
+#                        console/rusefi_console.jar); implied by --publish-branch
 #   --no-base-tune       skip the base tune (.msq) generation (rusEFI simulator + tune-tools)
 #   --sim-docker         build/run the 32-bit simulator in docker (auto if host lacks gcc -m32)
 #   --publish-branch B   (off by default) after a successful build, commit the firmware into
@@ -110,6 +111,7 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$REF" ] || REF=latest
 [ -n "$VARIANT" ] || VARIANT=core48_21
+[ -z "$PUBLISH_BRANCH" ] || WITH_CONSOLE=1
 case "$VARIANT" in *[!A-Za-z0-9_.-]*) echo "Invalid variant: $VARIANT" >&2; exit 2 ;; esac
 
 log() { printf '\n=== %s\n' "$*"; }
@@ -242,7 +244,7 @@ done
 # ---- console jar (optional, baseline step) -----------------------------------
 if [ "$WITH_CONSOLE" = 1 ]; then
   log "Building console jar"
-  ( cd "$RUSEFI_DIR" && ./gradlew --no-daemon :ui:shadowJar )   # gradlew moved to repo root upstream
+  ( cd "$RUSEFI_DIR" && ./gradlew --no-daemon -q :ui:shadowJar )   # gradlew moved to repo root; jar -> console/
 fi
 
 # ---- board config (baseline steps + current-upstream fixups) ---------------
@@ -341,12 +343,15 @@ for e in bin hex srec dfu; do
 done
 cp build/rusefi.elf "$OUT/${PREFIX}.elf"
 [ -n "$MSQ" ] && cp "$MSQ" "$OUT/${PREFIX}-base.msq"
-# console launcher zip, same as ECU_Build's rusefi_console.zip (misc/console_launcher/*)
-if [ -d "$RUSEFI_DIR/misc/console_launcher" ]; then
-  ( cd "$RUSEFI_DIR/misc/console_launcher" && zip -qrX "$OUT/${PREFIX}.console.zip" . )
-fi
-if [ "$WITH_CONSOLE" = 1 ] && [ -f "$RUSEFI_DIR/java_console_binary/rusefi_console.jar" ]; then
-  cp "$RUSEFI_DIR/java_console_binary/rusefi_console.jar" "$OUT/${PREFIX}.console.jar"
+# console zip: ECU_Build's rusefi_console.zip (misc/console_launcher/*) plus the jar in console/,
+# the layout the launchers expect (cd console && java -jar rusefi_console.jar). Upstream releases
+# ship the console only inside each board's rusefi_bundle_*.zip.
+if [ "$WITH_CONSOLE" = 1 ]; then
+  JAR="$RUSEFI_DIR/console/rusefi_console.jar"
+  [ -f "$JAR" ] || die "console jar not built ($JAR)"
+  CZ="$WORK/console_zip"; rm -rf "$CZ"; mkdir -p "$CZ/console"
+  cp -r "$RUSEFI_DIR/misc/console_launcher/." "$CZ/"; cp "$JAR" "$CZ/console/"
+  ( cd "$CZ" && zip -qrX "$OUT/${PREFIX}.console.zip" . ); rm -rf "$CZ"
 fi
 {
   echo "rusefi_ref=$REF"
@@ -390,12 +395,20 @@ if [ -n "$PUBLISH_BRANCH" ]; then
   [ -f "$OUT/${PREFIX}-base.msq" ] && cp "$OUT/${PREFIX}-base.msq" "$D/rusefi_base_tune.msq"
   ( cd "$D" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | LC_ALL=C sort | xargs sha256sum > "$WORK/publish.sums" )
   mv "$WORK/publish.sums" "$D/SHA256SUMS"
-  git -C "$P" add -A -- rusefi
-  outside=$(git -C "$P" diff --cached --name-only -- . ':(exclude)rusefi/**')
-  [ -z "$outside" ] || die "refusing to publish: staged changes outside rusefi/: $outside"
+  # top-level readme.md: only the <!-- RUSEFI:START/END --> section (appended if missing)
+  git -C "$P" show HEAD:readme.md > "$WORK/readme.before" 2>/dev/null || : > "$WORK/readme.before"
+  python3 "$SCRIPT_DIR/readme_section.py" update "$P/readme.md" "$D" "$D/rusefi_build_info.txt"
+  python3 "$SCRIPT_DIR/readme_section.py" check "$WORK/readme.before" "$P/readme.md"
+  git -C "$P" add -A -- rusefi readme.md
+  outside=$(git -C "$P" diff --cached --name-only -- . ':(exclude)rusefi/**' ':(exclude)readme.md')
+  [ -z "$outside" ] || die "refusing to publish: staged changes outside rusefi/ and readme.md: $outside"
+  git -C "$P" show :readme.md > "$WORK/readme.staged"
+  python3 "$SCRIPT_DIR/readme_section.py" check "$WORK/readme.before" "$WORK/readme.staged"
   echo "Planned changes on $PUBLISH_BRANCH:"
   git -C "$P" diff --cached --stat
   git -C "$P" diff --cached --name-status
+  echo "Planned readme.md diff:"
+  git -C "$P" --no-pager diff --cached -- readme.md
   if git -C "$P" diff --cached --quiet; then
     echo "nothing to publish (rusefi/ already up to date)"
   elif [ "$PUBLISH_DRY_RUN" = 1 ]; then
@@ -412,7 +425,11 @@ if [ -n "$PUBLISH_BRANCH" ]; then
       echo "push rejected (attempt $attempt), rebasing onto origin/$PUBLISH_BRANCH"
       sleep $((attempt * 5))
       git -C "$P" fetch -q origin "$PUBLISH_BRANCH"
-      git -C "$P" rebase -q FETCH_HEAD || die "rebase onto $PUBLISH_BRANCH failed (conflict in rusefi/?)"
+      git -C "$P" rebase -q FETCH_HEAD || die "rebase onto $PUBLISH_BRANCH failed (conflict in rusefi/ or readme RUSEFI section?)"
+      git -C "$P" show HEAD~1:readme.md > "$WORK/readme.before" 2>/dev/null || : > "$WORK/readme.before"
+      git -C "$P" show HEAD:readme.md > "$WORK/readme.staged"
+      python3 "$SCRIPT_DIR/readme_section.py" check "$WORK/readme.before" "$WORK/readme.staged"
+      [ -z "$(git -C "$P" diff --name-only HEAD~1 HEAD -- . ':(exclude)rusefi/**' ':(exclude)readme.md')" ] || die "rebased commit touches files outside rusefi/"
     done
     [ "$ok" = 1 ] || die "push to $PUBLISH_BRANCH failed after retries"
     echo "published: $(git -C "$P" rev-parse HEAD)"

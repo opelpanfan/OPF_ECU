@@ -62,9 +62,23 @@ Layout (mirrors the existing branch: flat `rusefi/`, fixed names):
 rusefi/rusefi_firmware.bin      rusefi/rusefi_tunerstudio.ini   rusefi/rusefi_console.zip   (existing names)
 rusefi/rusefi_firmware.hex      rusefi/rusefi_firmware.srec     rusefi/rusefi_firmware.dfu
 rusefi/rusefi_base_tune.msq     rusefi/rusefi_build_info.txt    rusefi/SHA256SUMS
+readme.md  (RUSEFI:START/END section only)
 ```
 
-Locally: `--publish-branch core48_21 [--publish-dry-run] [--publish-dir DIR]` (off by default).
+The top-level `readme.md` of the board branch is also updated, but only between
+`<!-- RUSEFI:START -->` and `<!-- RUSEFI:END -->` (`readme_section.py`; the block is appended at the
+end if the markers are missing; CRLF line endings are preserved). The section links every file in
+`rusefi/` (relative links) and shows the rusEFI tag/commit, build date and TS signature. The guard
+rejects any staged path other than `rusefi/**` and `readme.md`, and compares the readme text outside
+the markers before/after (also after a rebase). Text outside the markers - including the older
+hand-written "RUSEFI Firmware" download buttons, FOME:START/END and SPEEDUINO:START/END - is never edited.
+
+Console: upstream rusEFI releases no longer ship a standalone console (only inside each board's
+`rusefi_bundle_*.zip`), so `rusefi_console.zip` is built here: `misc/console_launcher/*` plus
+`console/rusefi_console.jar` from `./gradlew :ui:shadowJar` (the layout the launchers expect).
+
+Locally: `--publish-branch core48_21 [--publish-dry-run] [--publish-dir DIR]` (off by default;
+implies `--with-console`).
 
 ## Changes vs. ECU_Build `compile_rusefi.sh` / `core48_21.yml`
 
