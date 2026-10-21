@@ -40,6 +40,7 @@
 <!-- END LATEST DOWNLOAD BUTTON -->
 <!-- FOME:END -->
 
+<!-- RUSEFI:START -->
 ## RUSEFI Firmware
 (Right click and 'Save link as...')
 
