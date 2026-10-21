@@ -9,6 +9,7 @@
   "mcu_guard": "STM32F407xx",
   "firmware_branch": "core48_21",
   "firmware_dir": "speeduino",
+  "firmware_readme": "readme.md",
   "fuel_outputs": 8,
   "ign_outputs": 8,
   "has_rtc": 0,

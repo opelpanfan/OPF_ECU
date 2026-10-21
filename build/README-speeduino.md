@@ -47,7 +47,21 @@ Firmware branch: after a publishing run, the `firmware-branch` job commits `spee
 readme links to). It only ever touches that folder (checked with a diff before commit and after rebase; the job
 fails otherwise), skips the commit when the firmware files are unchanged, and retries a rejected push up to 5
 times with fetch + rebase, never force. If the release already exists, a push run still builds a variant whose
-firmware branch does not carry the current Speeduino tag yet; the existing release is left untouched.
+firmware branch does not carry the current Speeduino tag yet (or its readme section is missing/outdated); the
+existing release is left untouched.
+
+Firmware branch readme: when board.json sets `firmware_readme` (core48_21: `readme.md`), the same job regenerates
+the Speeduino section of that top-level file with `build/speeduino/fw_readme.py`, from `<firmware_dir>/build-info.json`
+(Speeduino version, build date, release link, links + SHA-256 of bin/hex/ini/msq/SHA256SUMS/build-info). Only the
+text between `<!-- SPEEDUINO:START -->` and `<!-- SPEEDUINO:END -->` is written; never edit it by hand. If the
+markers are missing, the existing `## Speeduino ...` block (up to the next `#`/`##` heading or other section
+marker) is wrapped in them; without such a block the section is appended at the end. FOME:START/END,
+RUSEFI:START/END and all other text are left byte-for-byte unchanged (line endings preserved). The staging guard
+allows `readme.md` only if old and new readme are identical once the SPEEDUINO section is stripped from both, and
+still fails on any other path outside `<firmware_dir>/`; it runs before the commit, after every rebase and after
+the push. Bump `FMT` in fw_readme.py when the generated text changes; the plan job then rebuilds the variant to
+refresh the section. The ini keeps the name `speeduino_tunerstudio.ini` (as on core48_20/core8_24c and in the
+existing readme links).
 
 Detecting new upstream releases automatically: GitHub runs `schedule` and `workflow_dispatch` only for
 workflows on the default branch (main), so on this branch alone the daily cron and the manual "Run workflow"

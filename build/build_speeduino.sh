@@ -576,6 +576,7 @@ for BOARD in ${BOARDS//,/ }; do
   PLATFORM_VER=$(printf '%s\n' "$PIO_PKGS" | sed -nE 's/^Platform ststm32 @ ([0-9.]+).*/\1/p')
   GCC_VER=$("$TC_DIR/bin/arm-none-eabi-gcc" -dumpversion 2>/dev/null || echo unknown)
 
+  BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   ( cd "$OUT" && sha256sum speeduino_firmware.bin speeduino_firmware.elf $( [ -f speeduino_firmware.hex ] && echo speeduino_firmware.hex ) \
       speeduino_tunerstudio.ini base-map.msq "opf-$BOARD-speeduino-$TAG.patch" > SHA256SUMS )
 
@@ -587,6 +588,7 @@ pkgs = [l for l in """$PIO_PKGS""".splitlines() if l.strip()]
 info = {
   "board": "$BOARD", "pio_env": "$ENV", "speeduino_repo": "$UPSTREAM_REPO", "speeduino_tag": "$TAG",
   "speeduino_commit": "$SPEEDUINO_COMMIT", "speeduino_commit_date": "$SPEEDUINO_DATE",
+  "build_date": "$BUILD_DATE",
   "firmware_signature": "$FW_SIG", "ini_signature": "$INI_SIG",
   "opf_ecu_commit": "$OPF_COMMIT", "opf_build_dir_dirty": "$OPF_DIRTY" == "true",
   "platformio_version": "$PIO_VER", "platform_spec": "$STM32_PLATFORM", "ststm32_version": "$PLATFORM_VER",
