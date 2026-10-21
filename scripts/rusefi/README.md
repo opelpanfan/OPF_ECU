@@ -62,16 +62,16 @@ Layout (mirrors the existing branch: flat `rusefi/`, fixed names):
 rusefi/rusefi_firmware.bin      rusefi/rusefi_tunerstudio.ini   rusefi/rusefi_console.zip   (existing names)
 rusefi/rusefi_firmware.hex      rusefi/rusefi_firmware.srec     rusefi/rusefi_firmware.dfu
 rusefi/rusefi_base_tune.msq     rusefi/rusefi_build_info.txt    rusefi/SHA256SUMS
-readme.md  (RUSEFI:START/END section only)
+readme.md  (RUSEFI:START/END section only: .bin / .ini / console badges)
 ```
 
-The top-level `readme.md` of the board branch is also updated, but only between
-`<!-- RUSEFI:START -->` and `<!-- RUSEFI:END -->` (`readme_section.py`; the block is appended at the
-end if the markers are missing; CRLF line endings are preserved). The section links every file in
-`rusefi/` (relative links) and shows the rusEFI tag/commit, build date and TS signature. The guard
-rejects any staged path other than `rusefi/**` and `readme.md`, and compares the readme text outside
-the markers before/after (also after a rebase). Text outside the markers - including the older
-hand-written "RUSEFI Firmware" download buttons, FOME:START/END and SPEEDUINO:START/END - is never edited.
+The top-level `readme.md` of the board branch is also maintained, but only between
+`<!-- RUSEFI:START -->` and `<!-- RUSEFI:END -->` (`readme_section.py`). The section is the branch's
+original "RUSEFI Firmware" block with the same three download badges (firmware `.bin`, TunerStudio
+`.ini`, console `.zip`) as commit 5c21224 - no per-file list. On first run the existing hand-written
+block is wrapped in the markers in place (otherwise appended at the end); CRLF is preserved. The guard
+rejects any staged path other than `rusefi/**` and `readme.md`, and checks that the readme text outside
+the markers is unchanged (also after a rebase). FOME:START/END and SPEEDUINO:START/END are never edited.
 
 Console: upstream rusEFI releases no longer ship a standalone console (only inside each board's
 `rusefi_bundle_*.zip`), so `rusefi_console.zip` is built here: `misc/console_launcher/*` plus

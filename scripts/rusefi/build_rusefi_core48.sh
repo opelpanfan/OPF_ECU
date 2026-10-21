@@ -397,7 +397,7 @@ if [ -n "$PUBLISH_BRANCH" ]; then
   mv "$WORK/publish.sums" "$D/SHA256SUMS"
   # top-level readme.md: only the <!-- RUSEFI:START/END --> section (appended if missing)
   git -C "$P" show HEAD:readme.md > "$WORK/readme.before" 2>/dev/null || : > "$WORK/readme.before"
-  python3 "$SCRIPT_DIR/readme_section.py" update "$P/readme.md" "$D" "$D/rusefi_build_info.txt"
+  python3 "$SCRIPT_DIR/readme_section.py" update "$P/readme.md" "$PUBLISH_BRANCH"
   python3 "$SCRIPT_DIR/readme_section.py" check "$WORK/readme.before" "$P/readme.md"
   git -C "$P" add -A -- rusefi readme.md
   outside=$(git -C "$P" diff --cached --name-only -- . ':(exclude)rusefi/**' ':(exclude)readme.md')
