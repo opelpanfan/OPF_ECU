@@ -51,8 +51,10 @@ firmware branch does not carry the current Speeduino tag yet (or its readme sect
 existing release is left untouched.
 
 Firmware branch readme: when board.json sets `firmware_readme` (core48_21: `readme.md`), the same job regenerates
-the Speeduino section of that top-level file with `build/speeduino/fw_readme.py`, from `<firmware_dir>/build-info.json`
-(Speeduino version, build date, release link, links + SHA-256 of bin/hex/ini/msq/SHA256SUMS/build-info). Only the
+the Speeduino section of that top-level file with `build/speeduino/fw_readme.py`. The visible text is exactly the
+original hand-written block (`## Speeduino Firmware`, the "Right click" hint and the two download badges for
+`speeduino_firmware.bin` and `speeduino_tunerstudio.ini`); only the markers and an invisible stamp comment
+(Speeduino tag from `<firmware_dir>/build-info.json` + format version, used by the plan job) are added. Only the
 text between `<!-- SPEEDUINO:START -->` and `<!-- SPEEDUINO:END -->` is written; never edit it by hand. If the
 markers are missing, the existing `## Speeduino ...` block (up to the next `#`/`##` heading or other section
 marker) is wrapped in them; without such a block the section is appended at the end. FOME:START/END,
