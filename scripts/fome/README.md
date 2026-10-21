@@ -14,6 +14,7 @@ The same script runs in GitHub Actions (`.github/workflows/fome-autobuild.yml`) 
 - `patches/*.patch` - applied (after the firmware build) so the FOME simulator compiles the
   board's `board_configuration.cpp` and applies its defaults (0001), and uses the same values as the
   real ECU where FOME's simulator differs (0002); used only for base-tune generation.
+- `readme_fome_section.py` - writes/checks the FOME section of the board branch readme.
 - `stage_board_branch.sh` - copies a build into `fome/` of a board-branch checkout; `--push` commits/pushes (CI).
 - `ts_read_page.py` - TunerStudio binary-protocol client (TCP simulator or serial ECU): signature + page.
 - `ini2msq.py` - page image + ini -> TunerStudio `.msq`, with a re-encode verification.
@@ -68,7 +69,10 @@ Same structure as the rusEFI workflow (`scripts/rusefi/`):
     `fome_firmware.bin` (OpenBLT+FOME, DFU at 0x08000000), `fome_firmware.srec` (OpenBLT update),
     `fome_tunerstudio.ini`, `fome_console.zip`, `fome_base_tune.msq`, `fome_build_info.txt`, `SHA256SUMS`.
     The script refuses if anything outside `fome/` changes; push rejections -> fetch + rebase + retry (5x),
-    never force. `readme.md`, `rusefi/`, `speeduino/` are never touched.
+    never force. `rusefi/`, `speeduino/` and everything else are never touched;
+  - `readme.md`: only the FOME section between `<!-- FOME:START -->` / `<!-- FOME:END -->` is rewritten
+    (`readme_fome_section.py`; the first publish wraps the existing unmarked FOME block). Any readme diff
+    outside the markers makes the script refuse.
 - Only `GITHUB_TOKEN` is used (`contents: read`; `contents: write` for the build job's publish steps).
 
 ## Reproducibility

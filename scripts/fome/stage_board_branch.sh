@@ -4,7 +4,9 @@
 #   fome/fome_firmware.bin    OpenBLT + FOME combined image, flash at 0x08000000 (DFU)
 #   fome/fome_firmware.srec   FOME application only, update through the OpenBLT bootloader
 #   fome/fome_tunerstudio.ini fome/fome_console.zip fome/fome_base_tune.msq fome/fome_build_info.txt fome/SHA256SUMS
-# Only fome/ is touched; the script refuses if anything outside fome/ is staged or modified.
+# Also rewrites the FOME section of readme.md (between <!-- FOME:START --> / <!-- FOME:END -->, see
+# readme_fome_section.py). The script refuses if anything outside fome/ changes, except readme.md diffs
+# confined to that section.
 # usage: scripts/fome/stage_board_branch.sh <build_out_dir> <board_branch_checkout> [--push "<commit message>"]
 #   --push: normal commit + `git push origin HEAD:<branch>`; on rejection fetch + rebase + retry (max 5), never force.
 set -euo pipefail
@@ -14,7 +16,10 @@ OUT=$(cd "$OUT" && pwd)
 [ -f "$OUT/fome.bin" ] && [ -f "$OUT/build-info.txt" ] || { echo "not a build_fome.sh output: $OUT" >&2; exit 1; }
 cd "$DST"; git rev-parse --is-inside-work-tree >/dev/null || { echo "not a git checkout: $DST" >&2; exit 1; }
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
+SD=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO=${GITHUB_REPOSITORY:-$(git remote get-url origin | sed -E 's#(\.git)?$##; s#.*github\.com[:/]##')}
 
+TMPD=$(mktemp -d); trap 'rm -rf "$TMPD"' EXIT
 stage() {
   local F=fome
   mkdir -p "$F"
@@ -27,10 +32,16 @@ stage() {
   [ -n "$msq" ] && cp "$msq" "$F/fome_base_tune.msq"
   cp "$OUT/build-info.txt" "$F/fome_build_info.txt"
   (cd "$F" && sha256sum $(ls | grep -vx SHA256SUMS | LC_ALL=C sort) > SHA256SUMS)
+  if [ -f readme.md ]; then
+    python3 "$SD/readme_fome_section.py" update readme.md "$F" "$REPO" "$BRANCH"
+    git show HEAD:readme.md > "$TMPD/readme.orig"
+    python3 "$SD/readme_fome_section.py" check "$TMPD/readme.orig" readme.md || { echo "refusing: readme.md outside FOME section" >&2; exit 1; }
+    git add -- readme.md
+  fi
   git add -A -- "$F"
   local outside
-  outside=$( { git diff --cached --name-only; git diff --name-only; } | grep -v '^fome/' || true)
-  if [ -n "$outside" ]; then echo "refusing: changes outside fome/:" >&2; echo "$outside" >&2; exit 1; fi
+  outside=$( { git diff --cached --name-only; git diff --name-only; } | grep -v '^fome/' | grep -vx readme.md | sort -u || true)
+  if [ -n "$outside" ]; then echo "refusing: changes outside fome/ and readme.md:" >&2; echo "$outside" >&2; exit 1; fi
 }
 
 stage
