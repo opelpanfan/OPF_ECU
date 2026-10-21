@@ -142,9 +142,28 @@ jobs:
           REF: ${{ needs.check.outputs.ref }}
           VARIANT: ${{ needs.check.outputs.variant }}
         run: |
+          set -o pipefail
           scripts/rusefi/build_rusefi_core48.sh --ref "$REF" --variant "$VARIANT" \
             --work "$RUNNER_TEMP/rusefi-build" --out "$GITHUB_WORKSPACE/out" \
-            --toolchain-dir "$TOOLCHAIN_DIR"
+            --toolchain-dir "$TOOLCHAIN_DIR" 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Report build failure
+        if: failure()
+        run: |
+          # surface the failure as annotations (readable without downloading logs)
+          log="$RUNNER_TEMP/build.log"
+          [ -f "$log" ] || exit 0
+          enc() { sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g'; }
+          echo "::error title=build errors::$(grep -nE 'ERROR|[Ee]rror[: ]|FAILED|No such file' "$log" | tail -25 | cut -c1-300 | enc)"
+          echo "::error title=build log tail::$(tail -40 "$log" | cut -c1-300 | enc)"
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rusefi-build-log
+          path: ${{ runner.temp }}/build.log
+          if-no-files-found: ignore
 
       - name: Summary
         env:
