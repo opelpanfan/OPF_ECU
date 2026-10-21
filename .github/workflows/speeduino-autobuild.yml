@@ -1,0 +1,214 @@
+name: Speeduino autobuild
+
+# Builds OPF ECU firmware (Speeduino) whenever noisymime/speeduino publishes a new release.
+# Same structure as fome-autobuild.yml:
+# - schedule: daily poll; builds + publishes a GitHub Release "speeduino-<speeduinoTag>-<variant>" for every
+#   variant that does not have one yet. (Schedules only run from the repository's default branch.)
+# - workflow_dispatch: manual build of any Speeduino tag; publishing is opt-in.
+# - push to master-speeduino-grok touching the build files: validation build, never publishes.
+# All board generation (pin map, PlatformIO env, OPF sources, ini edits, base tune) happens in
+# build/build_speeduino.sh from a clean upstream checkout.
+
+on:
+  schedule:
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+    inputs:
+      speeduino_tag:
+        description: 'Speeduino tag (empty = latest noisymime/speeduino release)'
+        required: false
+        default: ''
+      variants:
+        description: 'Comma-separated board variants from build/boards/*/speeduino (empty = all)'
+        required: false
+        default: ''
+      publish_release:
+        description: 'Create a GitHub Release with the artifacts'
+        type: boolean
+        default: false
+      force:
+        description: 'Rebuild/publish even if the release already exists'
+        type: boolean
+        default: false
+  push:
+    branches: [master-speeduino-grok]
+    paths:
+      - 'build/build_speeduino.sh'
+      - 'build/speeduino/**'
+      - 'build/boards/*/speeduino/**'
+      - '.github/workflows/speeduino-autobuild.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: speeduino-autobuild-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: '3.12'
+  PLATFORMIO_VERSION: '6.2.0'
+  STM32_PLATFORM: 'platformio/ststm32@19.5.0'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      speeduino_tag: ${{ steps.plan.outputs.speeduino_tag }}
+      tag_ref: ${{ steps.plan.outputs.tag_ref }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      any: ${{ steps.plan.outputs.any }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: build/boards
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IN_TAG: ${{ inputs.speeduino_tag }}
+          IN_VARIANTS: ${{ inputs.variants }}
+          IN_PUBLISH: ${{ inputs.publish_release }}
+          IN_FORCE: ${{ inputs.force }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          tag="${IN_TAG:-}"
+          if [ -z "$tag" ]; then
+            tag=$(gh api repos/noisymime/speeduino/releases/latest --jq .tag_name)
+          fi
+          [ -n "$tag" ] || { echo "::error::could not resolve Speeduino tag"; exit 1; }
+          [[ "$tag" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid Speeduino tag '$tag'"; exit 1; }
+          tag_ref=$tag
+
+          publish=false
+          case "$EVENT" in
+            schedule) publish=true ;;
+            workflow_dispatch) [ "$IN_PUBLISH" = "true" ] && publish=true ;;
+          esac
+
+          all=$(cd build/boards && for f in */speeduino/board.json; do printf '%s ' "${f%%/*}"; done)
+          variants="${IN_VARIANTS:-$all}"
+          todo=()
+          for v in ${variants//,/ }; do
+            [ -f "build/boards/$v/speeduino/board.json" ] || { echo "::error::unknown variant $v"; exit 1; }
+            if [ "$IN_FORCE" != "true" ] && [ "$EVENT" != "push" ] \
+               && gh release view "speeduino-$tag_ref-$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              if [ "$publish" = true ] || [ "$EVENT" = schedule ]; then
+                echo "release speeduino-$tag_ref-$v already exists - skipping $v"; continue
+              fi
+            fi
+            todo+=("$v")
+          done
+          matrix=$(printf '%s\n' "${todo[@]}" | jq -R . | jq -sc 'map(select(length>0))')
+          {
+            echo "speeduino_tag=$tag"; echo "tag_ref=$tag_ref"; echo "matrix=$matrix"
+            echo "any=$([ "$matrix" != "[]" ] && echo true || echo false)"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+          echo "### Speeduino autobuild plan" >> "$GITHUB_STEP_SUMMARY"
+          echo "Speeduino tag \`$tag\`, variants \`$matrix\`, publish=$publish" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      SPEEDUINO_WORK: ${{ github.workspace }}/.work-speeduino
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: .github/workflows/speeduino-autobuild.yml
+
+      - name: Cache PlatformIO (platform, toolchain, libraries)
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ env.PLATFORMIO_VERSION }}-${{ env.STM32_PLATFORM }}-${{ needs.plan.outputs.tag_ref }}
+          restore-keys: |
+            pio-${{ runner.os }}-${{ env.PLATFORMIO_VERSION }}-${{ env.STM32_PLATFORM }}-
+
+      - name: Install PlatformIO ${{ env.PLATFORMIO_VERSION }}
+        run: python -m pip install "platformio==${PLATFORMIO_VERSION}"
+
+      - name: Build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          bash build/build_speeduino.sh -b "${{ matrix.variant }}" -o "$GITHUB_WORKSPACE/out" "${{ needs.plan.outputs.speeduino_tag }}"
+          {
+            echo "### ${{ matrix.variant }} @ Speeduino ${{ needs.plan.outputs.speeduino_tag }}"
+            echo '```'
+            python -c 'import json,sys; d=json.load(open(sys.argv[1])); [print("%s: %s" % (k, d[k])) for k in ("speeduino_commit","firmware_signature","ststm32_version","platformio_version","flash_used_bytes","flash_used_pct","ram_used_bytes","ram_used_pct")]' "out/${{ matrix.variant }}/build-info.json"
+            cat "out/${{ matrix.variant }}/SHA256SUMS"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify checksums
+        working-directory: out/${{ matrix.variant }}
+        run: sha256sum -c SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: speeduino-${{ needs.plan.outputs.tag_ref }}-${{ matrix.variant }}
+          path: out/${{ matrix.variant }}
+          if-no-files-found: error
+
+  release:
+    needs: [plan, build]
+    if: needs.plan.outputs.publish == 'true' && needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: speeduino-${{ needs.plan.outputs.tag_ref }}-${{ matrix.variant }}
+          path: out
+      - name: Verify checksums
+        working-directory: out
+        run: sha256sum -c SHA256SUMS
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: speeduino-${{ needs.plan.outputs.tag_ref }}-${{ matrix.variant }}
+          SPEEDUINO_TAG: ${{ needs.plan.outputs.speeduino_tag }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF' > notes.md
+          import json, os
+          d = json.load(open("out/build-info.json"))
+          print("Speeduino `%s` (%s) for OPF `%s`, built by speeduino-autobuild.yml from OPF_ECU `%s`." % (
+              d["speeduino_tag"], d["speeduino_commit"][:10], d["board"], d["opf_ecu_commit"][:10]))
+          print()
+          print("- firmware signature / ini signature: `%s` / `%s`" % (d["firmware_signature"], d["ini_signature"]))
+          print("- flash %d / %d bytes (%s%%), RAM %d / %d bytes (%s%%)" % (d["flash_used_bytes"], d["flash_total_bytes"], d["flash_used_pct"], d["ram_used_bytes"], d["ram_total_bytes"], d["ram_used_pct"]))
+          print("- toolchain: PlatformIO %s, ststm32 %s, arm-gcc %s" % (d["platformio_version"], d["ststm32_version"], d["arm_gcc_version"]))
+          print("- base tune: board layout CORE (id 59); %d constants (%d from seed tune, %d ini defaults, %d fallbacks)" % (
+              d["base_tune"]["constants"], d["base_tune"]["from_seed"], d["base_tune"]["from_ini_default"], d["base_tune"]["fallback"]))
+          print()
+          print("Flash `speeduino_firmware.bin` via STM32 DFU (0483:df11). Load `speeduino_tunerstudio.ini` in TunerStudio; `base-map.msq` is a starting tune only.")
+          print()
+          print("```"); print(open("out/SHA256SUMS").read().strip()); print("```")
+          PYEOF
+          files=(out/speeduino_firmware.bin out/speeduino_tunerstudio.ini out/base-map.msq out/SHA256SUMS out/build-info.json)
+          for f in out/speeduino_firmware.hex out/speeduino_firmware.elf out/opf-*.patch; do [ -f "$f" ] && files+=("$f"); done
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${files[@]}" --clobber -R "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Speeduino $SPEEDUINO_TAG - $VARIANT" --notes-file notes.md "${files[@]}"
+          fi
