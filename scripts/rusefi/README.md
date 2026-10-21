@@ -47,6 +47,25 @@ The pinned ARM toolchain (`arm-gnu-toolchain-14.2.rel1`, sha256-verified) is ins
 * TS signature: `rusEFI <branch>.<YYYY.MM.DD London build date>.core8.<hash>`; branch = ref name
   (`master` for commit shas, override with `--signature-branch`).
 
+## Board branch publishing
+
+After a successful **non-dry-run** build (scheduled new release, or dispatch with `dry_run=false`) the
+workflow commits the firmware into `rusefi/` of the OPF_ECU board branch named like the variant
+(`core48_21`) and pushes it with `GITHUB_TOKEN` (normal push; on non-fast-forward it fetches, rebases
+and retries up to 5 times; never forces). Only `rusefi/` is touched (`fome/`, `speeduino/` and the
+top-level `readme.md` belong to other workflows). Dry runs and push-validation builds only stage the
+files and print the planned diff.
+
+Layout (mirrors the existing branch: flat `rusefi/`, fixed names):
+
+```
+rusefi/rusefi_firmware.bin      rusefi/rusefi_tunerstudio.ini   rusefi/rusefi_console.zip   (existing names)
+rusefi/rusefi_firmware.hex      rusefi/rusefi_firmware.srec     rusefi/rusefi_firmware.dfu
+rusefi/rusefi_base_tune.msq     rusefi/rusefi_build_info.txt    rusefi/SHA256SUMS
+```
+
+Locally: `--publish-branch core48_21 [--publish-dry-run] [--publish-dir DIR]` (off by default).
+
 ## Changes vs. ECU_Build `compile_rusefi.sh` / `core48_21.yml`
 
 1. GCC 12.3.Rel1 -> pinned Arm GNU Toolchain 14.2.Rel1 (what rusEFI CI uses), Java 11 -> 17.

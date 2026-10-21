@@ -27,6 +27,11 @@
 #   --with-console       also build rusefi_console.jar (slower)
 #   --no-base-tune       skip the base tune (.msq) generation (rusEFI simulator + tune-tools)
 #   --sim-docker         build/run the 32-bit simulator in docker (auto if host lacks gcc -m32)
+#   --publish-branch B   (off by default) after a successful build, commit the firmware into
+#                        rusefi/ of branch B of this repo (OPF_ECU layout, e.g. core48_21) and push
+#                        (normal push, rebase+retry on non-fast-forward, never force)
+#   --publish-dir DIR    existing checkout of the publish branch (CI); default: clone into <work>/publish
+#   --publish-dry-run    with --publish-branch: stage + print the planned diff, no commit/push
 #   --resolve-only       just print the resolved ref and exit
 #   -h|--help
 # Env: GITHUB_TOKEN (optional, only to raise GitHub API rate limits), JAVA_HOME,
@@ -75,8 +80,11 @@ WITH_CONSOLE=0
 BASE_TUNE=1
 SIM_DOCKER=auto
 RESOLVE_ONLY=0
+PUBLISH_BRANCH=""
+PUBLISH_DIR=""
+PUBLISH_DRY_RUN=0
 
-usage() { sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,39p' "$0" | sed 's/^# \{0,1\}//'; }
 while [ $# -gt 0 ]; do
   case "$1" in
     --ref) REF=$2; shift 2 ;;
@@ -93,6 +101,9 @@ while [ $# -gt 0 ]; do
     --no-base-tune) BASE_TUNE=0; shift ;;
     --sim-docker) SIM_DOCKER=1; shift ;;
     --resolve-only) RESOLVE_ONLY=1; shift ;;
+    --publish-branch) PUBLISH_BRANCH=$2; shift 2 ;;
+    --publish-dir) PUBLISH_DIR=$2; shift 2 ;;
+    --publish-dry-run) PUBLISH_DRY_RUN=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -330,6 +341,10 @@ for e in bin hex srec dfu; do
 done
 cp build/rusefi.elf "$OUT/${PREFIX}.elf"
 [ -n "$MSQ" ] && cp "$MSQ" "$OUT/${PREFIX}-base.msq"
+# console launcher zip, same as ECU_Build's rusefi_console.zip (misc/console_launcher/*)
+if [ -d "$RUSEFI_DIR/misc/console_launcher" ]; then
+  ( cd "$RUSEFI_DIR/misc/console_launcher" && zip -qrX "$OUT/${PREFIX}.console.zip" . )
+fi
 if [ "$WITH_CONSOLE" = 1 ] && [ -f "$RUSEFI_DIR/java_console_binary/rusefi_console.jar" ]; then
   cp "$RUSEFI_DIR/java_console_binary/rusefi_console.jar" "$OUT/${PREFIX}.console.jar"
 fi
@@ -350,5 +365,58 @@ fi
 
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
   { echo "prefix=$PREFIX"; echo "rusefi_ref=$REF"; echo "rusefi_commit=$RUSEFI_SHA"; echo "signature=$INI_SIG"; echo "out=$OUT"; } >> "$GITHUB_OUTPUT"
+fi
+# ---- optional: publish into rusefi/ of the OPF_ECU board branch ---------------------
+if [ -n "$PUBLISH_BRANCH" ]; then
+  log "Publishing to branch $PUBLISH_BRANCH (rusefi/ only)$([ "$PUBLISH_DRY_RUN" = 1 ] && echo ', DRY RUN')"
+  if [ -z "$PUBLISH_DIR" ]; then
+    PUBLISH_DIR="$WORK/publish"
+    url=$(git -C "$SCRIPT_DIR" remote get-url origin)
+    rm -rf "$PUBLISH_DIR"
+    git clone -q --single-branch --branch "$PUBLISH_BRANCH" "$url" "$PUBLISH_DIR"
+  fi
+  P=$(cd "$PUBLISH_DIR" && pwd -P)
+  [ "$(git -C "$P" branch --show-current)" = "$PUBLISH_BRANCH" ] || git -C "$P" checkout -q -B "$PUBLISH_BRANCH" "origin/$PUBLISH_BRANCH"
+  D="$P/rusefi"; mkdir -p "$D"
+  # layout of the existing branch: rusefi/rusefi_firmware.bin, rusefi/rusefi_tunerstudio.ini,
+  # rusefi/rusefi_console.zip; extra formats/tune/checksums added with the same naming style
+  declare -A MAP=(
+    [bin]=rusefi_firmware.bin [hex]=rusefi_firmware.hex [srec]=rusefi_firmware.srec [dfu]=rusefi_firmware.dfu
+    [ini]=rusefi_tunerstudio.ini [console.zip]=rusefi_console.zip [build-info.txt]=rusefi_build_info.txt
+  )
+  for k in "${!MAP[@]}"; do
+    [ -f "$OUT/${PREFIX}.$k" ] && cp "$OUT/${PREFIX}.$k" "$D/${MAP[$k]}"
+  done
+  [ -f "$OUT/${PREFIX}-base.msq" ] && cp "$OUT/${PREFIX}-base.msq" "$D/rusefi_base_tune.msq"
+  ( cd "$D" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | LC_ALL=C sort | xargs sha256sum > "$WORK/publish.sums" )
+  mv "$WORK/publish.sums" "$D/SHA256SUMS"
+  git -C "$P" add -A -- rusefi
+  outside=$(git -C "$P" diff --cached --name-only -- . ':(exclude)rusefi/**')
+  [ -z "$outside" ] || die "refusing to publish: staged changes outside rusefi/: $outside"
+  echo "Planned changes on $PUBLISH_BRANCH:"
+  git -C "$P" diff --cached --stat
+  git -C "$P" diff --cached --name-status
+  if git -C "$P" diff --cached --quiet; then
+    echo "nothing to publish (rusefi/ already up to date)"
+  elif [ "$PUBLISH_DRY_RUN" = 1 ]; then
+    echo "dry run: not committing/pushing"
+    git -C "$P" reset -q
+  else
+    # identity only if the publish checkout has none (CI); local runs keep the user's git identity
+    git -C "$P" config user.name >/dev/null || git -C "$P" config user.name "github-actions[bot]"
+    git -C "$P" config user.email >/dev/null || git -C "$P" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    git -C "$P" commit -q -m "rusEFI $REF (${RUSEFI_SHA:0:10}) for $VARIANT" -m "TS signature: $INI_SIG" -m "built by scripts/rusefi/build_rusefi_core48.sh"
+    ok=0
+    for attempt in 1 2 3 4 5; do
+      if git -C "$P" push origin "HEAD:refs/heads/$PUBLISH_BRANCH"; then ok=1; break; fi
+      echo "push rejected (attempt $attempt), rebasing onto origin/$PUBLISH_BRANCH"
+      sleep $((attempt * 5))
+      git -C "$P" fetch -q origin "$PUBLISH_BRANCH"
+      git -C "$P" rebase -q FETCH_HEAD || die "rebase onto $PUBLISH_BRANCH failed (conflict in rusefi/?)"
+    done
+    [ "$ok" = 1 ] || die "push to $PUBLISH_BRANCH failed after retries"
+    echo "published: $(git -C "$P" rev-parse HEAD)"
+    [ -n "${GITHUB_OUTPUT:-}" ] && echo "published_sha=$(git -C "$P" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  fi
 fi
 log "DONE: $PREFIX"

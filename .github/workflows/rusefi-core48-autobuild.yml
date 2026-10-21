@@ -16,7 +16,7 @@ on:
         required: false
         default: core48_21
       dry_run:
-        description: "Build + upload artifacts only, never create a GitHub release"
+        description: "Build + upload artifacts only: no GitHub release, no commit to the board branch (planned diff is printed)"
         type: boolean
         required: false
         default: true
@@ -135,17 +135,29 @@ jobs:
           path: ${{ env.TOOLCHAIN_DIR }}
           key: ${{ env.TOOLCHAIN_KEY }}
 
-      - name: Build firmware
+      # Board branch (e.g. core48_21) that receives the firmware under rusefi/ (FOME/Speeduino own fome/, speeduino/).
+      - name: Checkout board branch ${{ needs.check.outputs.variant }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check.outputs.variant }}
+          path: publish-target
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - name: Build firmware (+ publish to rusefi/ of the board branch, or print the planned diff)
         id: b
         env:
           GITHUB_TOKEN: ${{ github.token }}
           REF: ${{ needs.check.outputs.ref }}
           VARIANT: ${{ needs.check.outputs.variant }}
+          PUBLISH: ${{ needs.check.outputs.publish }}
         run: |
           set -o pipefail
+          pub=(--publish-branch "$VARIANT" --publish-dir "$GITHUB_WORKSPACE/publish-target")
+          [ "$PUBLISH" = true ] || pub+=(--publish-dry-run)   # dry_run dispatch + push validation never commit
           scripts/rusefi/build_rusefi_core48.sh --ref "$REF" --variant "$VARIANT" \
             --work "$RUNNER_TEMP/rusefi-build" --out "$GITHUB_WORKSPACE/out" \
-            --toolchain-dir "$TOOLCHAIN_DIR" 2>&1 | tee "$RUNNER_TEMP/build.log"
+            --toolchain-dir "$TOOLCHAIN_DIR" "${pub[@]}" 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       - name: Report build failure
         if: failure()
@@ -169,11 +181,15 @@ jobs:
         env:
           SIG: ${{ steps.b.outputs.signature }}
           SHA: ${{ steps.b.outputs.rusefi_commit }}
+          PUB: ${{ steps.b.outputs.published_sha }}
         run: |
           {
-            echo "rusEFI commit: \`$SHA\`  signature: \`$SIG\`"
+            echo "rusEFI commit: \`$SHA\`  signature: \`$SIG\`  board-branch commit: \`${PUB:-none (dry run)}\`"
+            echo '```'; sed -n '/^=== Publishing/,/^=== DONE/p' "$RUNNER_TEMP/build.log"; echo '```'
             echo '```'; cat out/SHA256SUMS; echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          enc() { sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g'; }
+          echo "::notice title=board branch (rusefi/)::$(sed -n '/^=== Publishing/,/^=== DONE/p' "$RUNNER_TEMP/build.log" | cut -c1-200 | enc)"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
