@@ -1,0 +1,9 @@
+variant=core48_21
+fome_board=core48
+fome_ref=release_260501_02
+fome_commit=343fb818014f082a14dc7dd25e69c29cfbd5bafb
+signature=rusEFI (FOME) release_260501_02.2026.10.21.core48.1413933978
+toolchain=arm-gnu-toolchain-11.3.rel1-x86_64-arm-none-eabi
+config_source=scripts/fome/board-overlay/core48_21
+built_utc=2026-10-21T15:42:58Z
+source_date_epoch=1780527678
