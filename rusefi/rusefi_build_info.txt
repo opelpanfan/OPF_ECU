@@ -1,0 +1,11 @@
+rusefi_ref=release_20260812
+rusefi_commit=a6d6d77b8876b5941c2ec12da8b28a00b9d7b538
+variant=core48_21
+board_src=/home/runner/work/OPF_ECU/OPF_ECU/scripts/rusefi/board-overlay/core48_21
+board_src_commit=20e50470b8c74723e9671f12571d1284ed8db75d
+ts_signature=rusEFI release_20260812.2026.10.21.core8.3836080866
+signature_branch=release_20260812
+toolchain=arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi
+java=openjdk version "17.0.20" 2026-07-21 LTS
+source_date_epoch=1786588549
+built_utc=2026-10-21T15:14:49Z
