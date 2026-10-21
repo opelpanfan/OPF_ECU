@@ -1,11 +1,14 @@
 name: Speeduino autobuild
 
 # Builds OPF ECU firmware (Speeduino) whenever noisymime/speeduino publishes a new release.
-# Same structure as fome-autobuild.yml:
-# - schedule: daily poll; builds + publishes a GitHub Release "speeduino-<speeduinoTag>-<variant>" for every
-#   variant that does not have one yet. (Schedules only run from the repository's default branch.)
-# - workflow_dispatch: manual build of any Speeduino tag; publishing is opt-in.
-# - push to master-speeduino-grok touching the build files: validation build, never publishes.
+# Same structure as fome-autobuild.yml. Everything lives on branch master-speeduino-grok:
+# - push to master-speeduino-grok touching the build files: resolves the latest noisymime/speeduino release,
+#   builds every variant and publishes a GitHub Release "speeduino-<speeduinoTag>-<variant>" for each variant
+#   that does not have one yet (variants already released are skipped).
+# - schedule / workflow_dispatch: GitHub only runs these for workflows on the repository's DEFAULT branch
+#   (main). While this file exists only on master-speeduino-grok they never fire; new upstream releases are
+#   picked up by the next push to this branch. If this workflow is ever copied to main, the daily schedule
+#   publishes automatically and workflow_dispatch (tag, variants, publish_release, force) becomes available.
 # All board generation (pin map, PlatformIO env, OPF sources, ini edits, base tune) happens in
 # build/build_speeduino.sh from a clean upstream checkout.
 
@@ -83,7 +86,7 @@ jobs:
 
           publish=false
           case "$EVENT" in
-            schedule) publish=true ;;
+            schedule|push) publish=true ;;
             workflow_dispatch) [ "$IN_PUBLISH" = "true" ] && publish=true ;;
           esac
 
@@ -92,11 +95,9 @@ jobs:
           todo=()
           for v in ${variants//,/ }; do
             [ -f "build/boards/$v/speeduino/board.json" ] || { echo "::error::unknown variant $v"; exit 1; }
-            if [ "$IN_FORCE" != "true" ] && [ "$EVENT" != "push" ] \
+            if [ "$publish" = true ] && [ "$IN_FORCE" != "true" ] \
                && gh release view "speeduino-$tag_ref-$v" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-              if [ "$publish" = true ] || [ "$EVENT" = schedule ]; then
-                echo "release speeduino-$tag_ref-$v already exists - skipping $v"; continue
-              fi
+              echo "release speeduino-$tag_ref-$v already exists - skipping $v"; continue
             fi
             todo+=("$v")
           done

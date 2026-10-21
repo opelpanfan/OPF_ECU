@@ -34,12 +34,20 @@ Create `build/boards/<name>/speeduino/board.json` (copy core48_21: `board_id`, `
 build, so different boards may reuse board id 59.
 
 ## CI
-`.github/workflows/speeduino-autobuild.yml` runs the same script: daily poll of the latest Speeduino release
-(schedules only run from the default branch), `workflow_dispatch` (tag, variants, publish_release, force),
-and validation builds on pushes to `master-speeduino-grok`. Artifacts are always uploaded. With publishing on,
-the workflow creates the release `speeduino-<tag>-<variant>` and skips variants that already have one,
-using only `GITHUB_TOKEN` (`contents: write` in the release job only). Toolchain pins: Python 3.12,
-PlatformIO 6.2.0, ststm32 19.5.0; `~/.platformio` and pip are cached.
+`.github/workflows/speeduino-autobuild.yml` runs the same script and lives only on `master-speeduino-grok`.
+A push to that branch touching the build files resolves the latest noisymime/speeduino release, builds
+every variant, uploads the artifacts and publishes `speeduino-<tag>-<variant>` for each variant that has no
+release yet (already released variants are skipped). Only `GITHUB_TOKEN` is used (`contents: write` in the
+release job only). Toolchain pins: Python 3.12, PlatformIO 6.2.0, ststm32 19.5.0; `~/.platformio` and pip
+are cached.
+
+Detecting new upstream releases automatically: GitHub runs `schedule` and `workflow_dispatch` only for
+workflows on the default branch (main), so on this branch alone the daily cron and the manual "Run workflow"
+button never fire. Until then a new Speeduino release is built by the next push to `master-speeduino-grok`
+(an empty commit is enough). Option, for Benas to decide: copy this workflow file (unchanged) to main; the daily
+poll then publishes missing releases automatically, and workflow_dispatch (tag, variants, publish_release,
+force) becomes available. The build files themselves can stay on this branch only if the scheduled run
+checks out `master-speeduino-grok` (add `ref: master-speeduino-grok` to the checkout steps).
 
 ## Local requirements
 `git`, `python3`, `curl`, `sha256sum`, PlatformIO (`pip install platformio==6.2.0`). Set `PLATFORMIO_VERSION`
