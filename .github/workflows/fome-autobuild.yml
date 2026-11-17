@@ -222,6 +222,6 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then echo "release $TAG already exists, not overwriting"; exit 0; fi
-          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file out/release-notes.md \
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --latest=false --notes-file out/release-notes.md \
             out/fome.bin out/fome_update.srec out/fome_bl.srec out/fome.elf out/fome_tunerstudio.ini \
             out/fome_console.zip out/*_base_tune.msq out/*-manual.md out/SHA256SUMS out/build-info.txt
