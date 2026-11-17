@@ -54,7 +54,7 @@ def flatten_legacy_fields(src: str) -> str:
         out,
     )
     # 4G63 board used the old TT_MITSUBISHI alias; current rusEFI/FOME call it TT_MITSU_4G63_CAM.
-    out = re.sub(r"\bTT_MITSUBISHI\b", "TT_MITSU_4G63_CAM", out)
+    out = re.sub(r"\b(?:trigger_type_e::)?TT_MITSUBISHI\b", "trigger_type_e::TT_MITSU_4G63_CAM", out)
     return out
 
 def fix(src: str) -> str:

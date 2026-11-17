@@ -30,17 +30,20 @@ def convert_lua_to_fome(s):
 
 
 def flatten_legacy_fields(src):
+    # FOME no longer has cylindersCount; firing order implies cylinder count.
+    out = re.sub(r'\s*engineConfiguration->(?:specs\.)?cylindersCount\s*=[^;]*;', '', src)
     out = re.sub(
-        r'engineConfiguration->specs\.(cylindersCount|firingOrder|displacement)\b',
+        r'engineConfiguration->specs\.(firingOrder|displacement)\b',
         r'engineConfiguration->\1',
-        src,
+        out,
     )
     out = re.sub(
         r'setAlgorithm\(\s*LM_SPEED_DENSITY\s*\)',
         'setAlgorithm(engine_load_mode_e::LM_SPEED_DENSITY)',
         out,
     )
-    out = re.sub(r'\bTT_MITSUBISHI\b', 'TT_MITSU_4G63_CAM', out)
+    out = re.sub(r'\b(?:trigger_type_e::)?TT_MITSUBISHI\b', 'trigger_type_e::TT_MITSU_4G63_CAM', out)
+    out = re.sub(r'(?<!trigger_type_e::)\bTT_MITSU_4G63_CAM\b', 'trigger_type_e::TT_MITSU_4G63_CAM', out)
     return out
 
 def convert_rusefi_hooks_to_fome(s):
