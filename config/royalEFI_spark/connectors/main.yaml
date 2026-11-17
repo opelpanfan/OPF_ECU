@@ -1,0 +1,181 @@
+pins:
+  - function: Power Ground
+    type: gnd
+    color: black
+
+  - function: +12V
+    type: 12v
+    color: red
+
+  - id: D6
+    class: outputs
+    ts_name: IDLE (D6)
+    
+  - id: D7
+    class: outputs
+    ts_name: INJECTOR 2 (D7)
+
+  - id: D8
+    class: outputs
+    ts_name: INJECTOR 1 (D8)
+    
+  - id: D9
+    class: outputs
+    ts_name: FAN (D9)
+    
+  - id: D10
+    class: outputs
+    ts_name: BOOST (D10)
+    
+  - id: D11
+    class: outputs
+    ts_name: TACHO (D11)
+    
+  - id: D12
+    class: outputs
+    ts_name: PUMP (D12)
+    
+  - id: E15
+    class: outputs
+    type: ign
+    ts_name: COIL 1 (E15)
+        
+  - id: E14
+    class: outputs
+    type: ign
+    ts_name: COIL 2 (E14)
+                    
+  - id: EFI_ADC_9
+    class: analog_inputs
+    ts_name: On-board Battery Sense (B1)
+    
+  - id: EFI_ADC_15
+    class: analog_inputs
+    ts_name: TPS (C5)
+    
+  - id: EFI_ADC_8
+    class: analog_inputs
+    ts_name: CLT (B0)
+    
+  - id: EFI_ADC_7
+    class: analog_inputs
+    ts_name: IAT (A7)
+    
+  - id: EFI_ADC_14
+    class: analog_inputs
+    function: MAP Sensor Input
+    ts_name: On-board MAP (C4) 
+    
+  - id: EFI_ADC_5
+    class: analog_inputs
+    ts_name: Analog Inputs 1 (A5)
+    
+  - id: EFI_ADC_6
+    class: analog_inputs
+    ts_name: Analog Inputs 2 (A6)
+    
+  - id: EFI_ADC_3
+    class: analog_inputs
+    ts_name: Analog Inputs 3 (A3)
+    
+  - id: EFI_ADC_2
+    class: analog_inputs
+    function: MAP Sensor Input
+    ts_name: On-board MAP (A2) 
+        
+  - id: EFI_ADC_13
+    class: analog_inputs
+    function: O2 Sensor Input
+    ts_name: Primary On-board O2 (C3)
+        
+  - id: [E2, E2]
+    class: [switch_inputs, event_inputs]
+    ts_name: VR1 (E2)
+
+  - id: [E3, E3]
+    class: [switch_inputs, event_inputs]
+    ts_name: VR2 (E3)
+
+  - id: [G1, G1]
+    class: [switch_inputs, event_inputs]
+    ts_name: Hall1 (G1)
+
+  - id: [E7, E7]
+    class: [switch_inputs, event_inputs]
+    ts_name: Hall2 (E7)
+
+  - id: [E9, E9]
+    class: [switch_inputs, event_inputs]
+    ts_name: Hall3 (E9)
+
+  - id: [E8, E8]
+    class: [switch_inputs, event_inputs]
+    ts_name: Hall4 (E8)
+    
+  - id: G10
+    class: outputs
+    ts_name: Running LED (G10)
+
+  - id: G11
+    class: outputs
+    ts_name: Warning LED (G11)
+
+  - id: G12
+    class: outputs
+    ts_name: Error LED (G12)
+
+  - id: G13
+    class: outputs
+    ts_name: Communication LED (G13)
+    
+  - id: C10
+    class: outputs
+    ts_name: SPI3 SCK (C10)
+
+  - id: C11
+    class: outputs
+    ts_name: SPI3 MISO (C11)
+
+  - id: C12
+    class: outputs
+    ts_name: SPI3 MOSI (C12)
+
+  - id: B13
+    class: outputs
+    ts_name: SPI2 SCK (B13)
+
+  - id: B14
+    class: outputs
+    ts_name: SPI2 MISO (B14)
+
+  - id: B15
+    class: outputs
+    ts_name: SPI2 MOSI (B15)
+
+  - id: B10
+    class: outputs
+    ts_name: BARO SCL (B10)
+
+  - id: B11
+    class: outputs
+    ts_name: BARO SDA (B11)
+
+  - id: B4
+    class: outputs
+    ts_name: SD CS (B4)
+
+  - id: A9
+    class: outputs
+    ts_name: USART1 TX (A9)
+
+  - id: A10
+    class: outputs
+    ts_name: USART1 RX (A10)
+
+  - id: D0
+    class: outputs
+    ts_name: CAN 1 RX (D0)
+    
+  - id: D1
+    class: outputs
+    ts_name: CAN 1 TX (D1)

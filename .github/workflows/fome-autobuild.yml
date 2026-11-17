@@ -1,0 +1,227 @@
+# Auto-build FOME firmware (+ console, base tune) for OPF boards whenever FOME-Tech/fome-fw publishes a new
+# release, and commit the result to the board branch (<variant>, e.g. core48_21) under fome/.
+# Build logic lives in scripts/fome/build_fome.sh (same script for local builds); layout mirrors the rusEFI
+# workflow (scripts/rusefi/...). Publishing (schedule on a new FOME release, or dispatch with dry_run=false)
+# = release fome-<tag>-<variant> + a commit to <variant>/fome; never done by hand.
+name: FOME auto-build
+
+on:
+  schedule:
+    - cron: "47 */6 * * *"   # poll FOME releases every 6h (GitHub runs schedules from the default branch only)
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'FOME tag/branch/sha, "latest", or a pinned commit'
+        required: false
+        default: 3b772a890ae0703793b14f08822c20f34b386b8c
+      variant:
+        description: "Board variant (config/<variant>/ or config/opf33_fome for OPF33)"
+        required: false
+        default: opf33
+      dry_run:
+        description: "Build + upload artifacts only (no release, no commit to the board branch)"
+        type: boolean
+        required: false
+        default: true
+      force:
+        description: "Build/publish even if release fome-<tag>-<variant> exists (never overwrites the release)"
+        type: boolean
+        required: false
+        default: false
+  push:
+    branches: [master-grok]
+    paths:
+      - "scripts/fome/**"
+      - "config/**"
+      - ".github/workflows/fome-autobuild.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fome-${{ github.ref }}-${{ github.event.inputs.variant || 'opf33' }}
+  cancel-in-progress: false
+
+env:
+  TOOLCHAIN_DIR: ${{ github.workspace }}/../toolchain
+
+jobs:
+  check:
+    name: Resolve FOME ref / compare with last build
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.r.outputs.ref }}
+      commit: ${{ steps.r.outputs.commit }}
+      variant: ${{ steps.r.outputs.variant }}
+      tag: ${{ steps.r.outputs.tag }}
+      build: ${{ steps.r.outputs.build }}
+      publish: ${{ steps.r.outputs.publish }}
+      toolchain: ${{ steps.r.outputs.toolchain }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/fome
+            config
+      - id: r
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          IN_REF: ${{ github.event.inputs.ref }}
+          IN_VARIANT: ${{ github.event.inputs.variant }}
+          IN_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          IN_FORCE: ${{ github.event.inputs.force }}
+          VAR_VARIANT: ${{ vars.FOME_VARIANT }}   # optional repo variable, default core48_21
+        run: |
+          set -euo pipefail
+          variant="${IN_VARIANT:-${VAR_VARIANT:-opf33}}"
+          DEFAULT_REF="3b772a890ae0703793b14f08822c20f34b386b8c"
+          ref=$(scripts/fome/build_fome.sh --resolve-only --ref "${IN_REF:-$DEFAULT_REF}")
+          safe=$(printf '%s' "$ref" | tr -c 'A-Za-z0-9._-' '-')
+          tag="fome-${safe}-${variant}"
+          commit=$(gh api "repos/FOME-Tech/fome-fw/commits/$ref" --jq .sha)
+          # what the board branch (<variant>) currently has in fome/
+          if gh api "repos/$GITHUB_REPOSITORY/branches/$variant" >/dev/null 2>&1; then branch=true; else branch=false; fi
+          have=$(gh api -H "Accept: application/vnd.github.raw" "repos/$GITHUB_REPOSITORY/contents/fome/fome_build_info.txt?ref=$variant" 2>/dev/null \
+                 | sed -n 's/^fome_commit=//p' || true)
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then rel=true; else rel=false; fi
+          # already published = release exists and the board branch carries the same FOME commit
+          if [ "$rel" = true ] && [ "$have" = "$commit" ]; then exists=true; else exists=false; fi
+          # ECU_Build is private (GITHUB_TOKEN cannot read it): board files are vendored in scripts/fome/board-overlay
+          if [ "$variant" = opf33 ]; then overlay_mk="config/opf33_fome/board.mk"
+          else overlay_mk="config/$variant/board.mk"; fi
+          if [ ! -f "$overlay_mk" ] && [ ! -f "scripts/fome/board-overlay/$variant/board.mk" ]; then
+            echo "::error::$overlay_mk and scripts/fome/board-overlay/$variant missing"; exit 1
+          fi
+          # ARM toolchain FOME pins for this ref (cache key)
+          toolchain=$(curl -fsSL "https://raw.githubusercontent.com/FOME-Tech/fome-fw/$ref/firmware/use_arm_gcc.mk" \
+            | grep -oE 'arm-gnu-toolchain-[^ ]*-x86_64-arm-none-eabi' | grep -v darwin | head -1 || true)
+          build=true; publish=false
+          [ "$branch" = true ] || echo "::warning::board branch $variant does not exist - nothing will be committed"
+          case "$EVENT" in
+            schedule)
+              if [ "$exists" = true ]; then build=false; else publish=$branch; fi ;;
+            workflow_dispatch)
+              if [ "$exists" = true ] && [ "$IN_FORCE" != true ]; then build=false; fi
+              if [ "$IN_DRY_RUN" = false ] && { [ "$exists" = false ] || [ "$IN_FORCE" = true ]; }; then publish=$branch; fi ;;
+            *) ;;  # push: validation build, never publishes
+          esac
+          {
+            echo "ref=$ref"; echo "commit=$commit"; echo "variant=$variant"; echo "tag=$tag"; echo "toolchain=${toolchain:-unknown}"
+            echo "build=$build"; echo "publish=$publish"
+          } | tee -a "$GITHUB_OUTPUT"
+          echo "### FOME \`$ref\` (\`${commit:0:10}\`) / \`$variant\`: release exists=$rel, board branch has \`${have:-nothing}\` -> build=$build, publish=$publish" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build ${{ needs.check.outputs.tag }}
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write   # only used when publish=true (release + commit to the board branch)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install host tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends make zip mtools dosfstools xxd gcc-multilib g++-multilib rsync
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ needs.check.outputs.ref }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Cache ARM toolchain (pinned by FOME's use_arm_gcc.mk, sha256-checked)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TOOLCHAIN_DIR }}
+          key: ${{ needs.check.outputs.toolchain }}-x86_64
+
+      - name: Build firmware + base tune
+        id: b
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REF: ${{ needs.check.outputs.ref }}
+          VARIANT: ${{ needs.check.outputs.variant }}
+          TOOLCHAIN_CACHE: ${{ env.TOOLCHAIN_DIR }}
+          REPRO_DEBUG: "1"
+        run: |
+          set -o pipefail
+          scripts/fome/build_fome.sh --ref "$REF" --variant "$VARIANT" \
+            --work "$RUNNER_TEMP/fome-build" --out "$GITHUB_WORKSPACE/out" 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Report build failure
+        if: failure()
+        run: |
+          log="$RUNNER_TEMP/build.log"
+          [ -f "$log" ] || exit 0
+          enc() { sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g'; }
+          echo "::error title=build errors::$(grep -nE 'ERROR|[Ee]rror[: ]|FAILED|No such file' "$log" | tail -25 | cut -c1-300 | enc)"
+          echo "::error title=build log tail::$(tail -40 "$log" | cut -c1-300 | enc)"
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fome-build-log
+          path: ${{ runner.temp }}/build.log
+          if-no-files-found: ignore
+
+      - name: Summary
+        run: |
+          { echo '```'; cat out/build-info.txt; echo; cat out/SHA256SUMS; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.check.outputs.tag }}
+          path: out/
+          if-no-files-found: error
+
+      - name: Check out board branch ${{ needs.check.outputs.variant }}
+        if: needs.check.outputs.publish == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check.outputs.variant }}
+          path: board-branch
+          fetch-depth: 20
+
+      - name: Commit firmware to ${{ needs.check.outputs.variant }}/fome
+        if: needs.check.outputs.publish == 'true'
+        env:
+          REF: ${{ needs.check.outputs.ref }}
+          COMMIT: ${{ needs.check.outputs.commit }}
+          VARIANT: ${{ needs.check.outputs.variant }}
+        run: |
+          set -euo pipefail
+          cd board-branch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # fome/ only (script refuses anything else), normal commit, fetch+rebase+retry x5, never force
+          "$GITHUB_WORKSPACE/scripts/fome/stage_board_branch.sh" "$GITHUB_WORKSPACE/out" . --push \
+            "FOME $REF (${COMMIT:0:10}) for $VARIANT - $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+      - name: Publish GitHub release ${{ needs.check.outputs.tag }}
+        if: needs.check.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.check.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "release $TAG already exists, not overwriting"; exit 0; fi
+          gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file out/release-notes.md \
+            out/fome.bin out/fome_update.srec out/fome_bl.srec out/fome.elf out/fome_tunerstudio.ini \
+            out/fome_console.zip out/*_base_tune.msq out/*-manual.md out/SHA256SUMS out/build-info.txt

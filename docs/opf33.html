@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPF33 V1.1 pinout</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; margin: 1.5rem; line-height: 1.4; }
+  table { border-collapse: collapse; width: 100%; max-width: 1100px; }
+  th, td { border: 1px solid #333; padding: 6px 8px; text-align: left; }
+  th { background: #111; color: #fff; }
+  tr:nth-child(even) { background: #eee; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #111; color: #eee; }
+    th { background: #000; }
+    th, td { border-color: #888; }
+    tr:nth-child(even) { background: #1c1c1c; }
+    a { color: #71b7ff; }
+  }
+</style>
+</head>
+<body>
+<h1>OPF33 V1.1 pinout</h1>
+<p>OPF33 uses a single <strong>33-pin</strong> connector.
+Pins 23-31 have back-silkscreen labels. Generated from <code>config/opf33/board.yaml</code>.</p>
+<table>
+  <thead><tr><th>Pin</th><th>Back silk</th><th>Net</th><th>MCU</th><th>Function</th><th>Notes</th></tr></thead>
+  <tbody>
+  <tr><td>1</td><td>-</td><td>OUT_H3</td><td>PE13</td><td>Ignition 3</td><td>-</td></tr><tr><td>2</td><td>-</td><td>OUT_H4</td><td>PE12</td><td>Ignition 4</td><td>-</td></tr><tr><td>3</td><td>-</td><td>OUT_H1</td><td>PE15</td><td>Ignition 1</td><td>-</td></tr><tr><td>4</td><td>-</td><td>OUT_H2</td><td>PE14</td><td>Ignition 2</td><td>-</td></tr><tr><td>5</td><td>-</td><td>TRIGGER2-</td><td>PE8</td><td>Trigger 2 minus</td><td>Hall via JP6 2-3, VR via JP6 2-1</td></tr><tr><td>6</td><td>-</td><td>TRIGGER2+</td><td>PE9</td><td>Trigger 2 plus</td><td>Hall via JP5 2-3, VR via JP5 2-1</td></tr><tr><td>7</td><td>-</td><td>TRIGGER1-</td><td>PE7</td><td>Trigger 1 minus</td><td>Hall via JP13 2-3, VR via JP13 2-1</td></tr><tr><td>8</td><td>-</td><td>TRIGGER1+</td><td>PG1 / PE2 (VR plus)</td><td>Trigger 1 plus (Hall)</td><td>Hall via JP4 2-3 (PG1), VR via JP4 2-1 (PE2)</td></tr><tr><td>9</td><td>-</td><td>LSU1_NERNST</td><td>on-board 14point7</td><td>LSU Nernst</td><td>via on-board 14point7</td></tr><tr><td>10</td><td>-</td><td>LSU1_IP</td><td>on-board 14point7</td><td>LSU IP</td><td>via on-board 14point7</td></tr><tr><td>11</td><td>-</td><td>VIN</td><td>PB1</td><td>Battery +12V</td><td>-</td></tr><tr><td>12</td><td>-</td><td>IN_A1</td><td>PC5</td><td>CLT</td><td>Permanent 2.49 k pull-up to +5V. Use for CLT/IAT, not a TPS pot.</td></tr><tr><td>13</td><td>-</td><td>IN_A2</td><td>PB0</td><td>IAT</td><td>Permanent 2.49 k pull-up to +5V.</td></tr><tr><td>14</td><td>-</td><td>IN_A3</td><td>PA7</td><td>TPS</td><td>No 2.49 k pull-up. Suitable for a 0-5 V pot.</td></tr><tr><td>15</td><td>-</td><td>IN_A4</td><td>PC4</td><td>Analog 4</td><td>-</td></tr><tr><td>16</td><td>-</td><td>IN_A5</td><td>PA5</td><td>Analog 5</td><td>-</td></tr><tr><td>17</td><td>-</td><td>IN_HALL5</td><td>PF13</td><td>Hall 5</td><td>-</td></tr><tr><td>18</td><td>-</td><td>CAN1_H</td><td>PD0</td><td>CAN1 High</td><td>MAX3051 transceiver; MCU PD0/PD1</td></tr><tr><td>19</td><td>-</td><td>CAN1_L</td><td>PD1</td><td>CAN1 Low</td><td>-</td></tr><tr><td>20</td><td>-</td><td>LSU1_IA</td><td>on-board 14point7</td><td>LSU IA</td><td>via on-board 14point7</td></tr><tr><td>21</td><td>-</td><td>LSU1_VGND</td><td>on-board 14point7</td><td>LSU VGND</td><td>via on-board 14point7</td></tr><tr><td>22</td><td>-</td><td>OUT_+5V</td><td>-</td><td>Sensor +5V</td><td>-</td></tr><tr><td>23</td><td>INJ1</td><td>OUT_L8</td><td>PD13</td><td>Injector 1</td><td>-</td></tr><tr><td>24</td><td>INJ2</td><td>OUT_L7</td><td>PD12</td><td>Injector 2</td><td>-</td></tr><tr><td>25</td><td>INJ3</td><td>OUT_L6</td><td>PD11</td><td>Injector 3</td><td>-</td></tr><tr><td>26</td><td>INJ4</td><td>OUT_L5</td><td>PD10</td><td>Injector 4</td><td>-</td></tr><tr><td>27</td><td>FUEL</td><td>OUT_L4</td><td>PD9</td><td>Fuel pump</td><td>-</td></tr><tr><td>28</td><td>FAN</td><td>OUT_L3</td><td>PD8</td><td>Fan</td><td>-</td></tr><tr><td>29</td><td>IDLE</td><td>OUT_L2</td><td>PD7</td><td>Idle solenoid</td><td>-</td></tr><tr><td>30</td><td>BOOST</td><td>OUT_L1</td><td>PD6</td><td>Boost solenoid</td><td>-</td></tr><tr><td>31</td><td>TACHO</td><td>OUT_L9</td><td>PD14</td><td>Tachometer</td><td>-</td></tr><tr><td>32</td><td>-</td><td>LSU1_HEATER-</td><td>on-board 14point7 / VNLD5090</td><td>LSU heater minus</td><td>via on-board 14point7 / VNLD5090</td></tr><tr><td>33</td><td>-</td><td>GND</td><td>-</td><td>Power ground</td><td>-</td></tr>
+  </tbody>
+</table>
+<h2>PCB</h2>
+<p><img src="https://github.com/opelpanfan/OPF_ECU/assets/12942077/39e08eaa-056f-47bf-bc9c-adae13f9d11d" alt="PCB top" style="max-width:100%;height:auto"></p>
+<p><img src="https://github.com/opelpanfan/OPF_ECU/assets/12942077/b780d395-3b82-46ec-8465-948469103bc0" alt="PCB back" style="max-width:100%;height:auto"></p>
+<h2>Trigger</h2>
+<p><img src="https://github.com/opelpanfan/OPF_ECU/assets/12942077/3e8c9698-e620-4e2e-aa5c-6c7e95a41adc" alt="Hall trigger setup" style="max-width:100%;height:auto"></p>
+<p><img src="https://github.com/opelpanfan/OPF_ECU/assets/12942077/83f4c142-d014-474f-8db0-7748346d7d1c" alt="VR trigger setup" style="max-width:100%;height:auto"></p>
+<h2>Notes</h2>
+<ul><li>V1.1 uses a single 33-pin connector. The older Black/Grey 48-pin tables in earlier manuals do not apply.</li><li>V1.1 removed the throttle-body (DBW), EGT and stepper connectors. TPS goes on IN_A3 (pin 14), not on a separate DBW plug.</li><li>IN_A1 and IN_A2 have permanent 2.49 k pull-ups to +5V (R85/R86). Use them for CLT and IAT. Do not wire a TPS pot to pins 12 or 13.</li><li>Primary trigger default is Hall on pin 8 (PG1) with JP4 in the Hall position, 60-2.</li><li>Back silkscreen labels exist only on pins 23-31 (INJ1-4, FUEL, FAN, IDLE, BOOST, TACHO).</li><li>On-board MAP is PA3 (MPXHZ6400). On-board wideband linear output is PA4 (14point7). Battery sense is PB1 with a 7.34 divider.</li><li>CAN2, knock, ETB, EGT and the idle stepper are disabled in the firmware defaults.</li></ul>
+</body>
+</html>

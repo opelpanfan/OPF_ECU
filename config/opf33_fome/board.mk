@@ -1,0 +1,9 @@
+# List of all the board related files.
+BOARDCPPSRC = $(BOARD_DIR)/board_configuration.cpp
+
+# Override DEFAULT_ENGINE_TYPE
+SHORT_BOARD_NAME = opf33
+DDEFS += -DFIRMWARE_ID=\"opf33\"
+DDEFS += -DDEFAULT_ENGINE_TYPE=MINIMAL_PINS
+# OPF33 V1.1: no knock hardware
+DDEFS += -DEFI_SOFTWARE_KNOCK=FALSE -DSTM32_ADC_USE_ADC3=TRUE

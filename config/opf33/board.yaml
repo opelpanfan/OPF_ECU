@@ -1,0 +1,425 @@
+board:
+  id: opf33
+  name: OPF33
+  title: OPF33
+  hardware_revision: V1.1
+  mcu: STM32F407ZGT7
+  cpu: ARCH_STM32F4
+  package: LQFP-144
+  author: Ben Brazdziunas
+  url: https://opf.systems/opf33
+  family: core8
+firmware:
+  rusefi:
+    overlay_as: core8
+    short_board_name: core8
+    firmware_id: core8
+    hook_api: setup_custom_board_overrides
+    lua_api: setLuaScript
+  fome:
+    overlay_as: opf33
+    short_board_name: opf33
+    firmware_id: opf33
+    hook_api: setBoardDefaultConfiguration
+    lua_api: config_luaScript
+    use_openblt: true
+  default_engine_type: MINIMAL_PINS
+  ram_unused_size: 1000
+features:
+  injectors: 4
+  coils: 4
+  low_side: 5
+  vr_channels: 2
+  hall_inputs: 5
+  analog_5v: 5
+  can: 1
+  wideband: 14point7
+  map: onboard_mpxhz6400
+  barometer: lps25
+  sd_card: true
+  bluetooth: true
+  usb: true
+  dbw: false
+  egt: false
+  stepper: false
+  knock: false
+  can2: false
+analog:
+  input_divider: 1.56
+  vbatt_divider: 7.34
+  adc_vcc: 3.3
+leds:
+  comms: PG13
+  running: PG10
+  warning: PG11
+sd_card:
+  spi: 3
+  sck: PC10
+  miso: PC11
+  mosi: PC12
+  cs: PB3
+serial:
+  tx: PA9
+  rx: PA10
+  speed: 115200
+baro:
+  scl: PB10
+  sda: PB11
+can:
+  can1:
+    rx: PD0
+    tx: PD1
+    baud: 500000
+  can2: disabled
+outputs:
+  injectors:
+  - PD13
+  - PD12
+  - PD11
+  - PD10
+  ignition:
+  - PE15
+  - PE14
+  - PE13
+  - PE12
+  fuel_pump: PD9
+  fan: PD8
+  idle_solenoid: PD7
+  boost: PD6
+  tacho: PD14
+sensors:
+  clt:
+    pin: PC5
+    adc: EFI_ADC_15
+    connector: 12
+    net: IN_A1
+    bias_ohms: 2490
+  iat:
+    pin: PB0
+    adc: EFI_ADC_8
+    connector: 13
+    net: IN_A2
+    bias_ohms: 2490
+  tps:
+    pin: PA7
+    adc: EFI_ADC_7
+    connector: 14
+    net: IN_A3
+  map:
+    pin: PA3
+    adc: EFI_ADC_3
+    type: MT_MPXH6400
+    onboard: true
+  afr:
+    pin: PA4
+    adc: EFI_ADC_4
+    ego: ES_14Point7_Free
+    onboard: true
+  vbatt:
+    pin: PB1
+    adc: EFI_ADC_9
+    connector: 11
+    net: VIN
+trigger:
+  type: TT_TOOTHED_WHEEL_60_2
+  primary:
+    pin: PG1
+    mode: hall
+    connector: 8
+    jumper: JP4
+    vr_pin: PE2
+    minus_pin: PE7
+    minus_connector: 7
+  secondary:
+    plus_pin: PE9
+    minus_pin: PE8
+    connectors:
+    - 6
+    - 5
+    jumpers:
+    - JP5
+    - JP6
+    default: unassigned
+disabled:
+- etb
+- egt
+- stepper
+- knock
+- can2
+lua: 'function onTick()
+
+
+  end
+
+  '
+connector:
+  name: 33-pin
+  pins:
+  - pin: 1
+    silk: null
+    net: OUT_H3
+    mcu: PE13
+    function: Ignition 3
+    class: ign
+  - pin: 2
+    silk: null
+    net: OUT_H4
+    mcu: PE12
+    function: Ignition 4
+    class: ign
+  - pin: 3
+    silk: null
+    net: OUT_H1
+    mcu: PE15
+    function: Ignition 1
+    class: ign
+  - pin: 4
+    silk: null
+    net: OUT_H2
+    mcu: PE14
+    function: Ignition 2
+    class: ign
+  - pin: 5
+    silk: null
+    net: TRIGGER2-
+    mcu: PE8
+    function: Trigger 2 minus
+    class: trigger
+    note: Hall via JP6 2-3, VR via JP6 2-1
+  - pin: 6
+    silk: null
+    net: TRIGGER2+
+    mcu: PE9
+    function: Trigger 2 plus
+    class: trigger
+    note: Hall via JP5 2-3, VR via JP5 2-1
+  - pin: 7
+    silk: null
+    net: TRIGGER1-
+    mcu: PE7
+    function: Trigger 1 minus
+    class: trigger
+    note: Hall via JP13 2-3, VR via JP13 2-1
+  - pin: 8
+    silk: null
+    net: TRIGGER1+
+    mcu: PG1
+    function: Trigger 1 plus (Hall)
+    class: trigger
+    alt_mcu: PE2
+    alt_function: VR plus
+    note: Hall via JP4 2-3 (PG1), VR via JP4 2-1 (PE2)
+  - pin: 9
+    silk: null
+    net: LSU1_NERNST
+    mcu: null
+    function: LSU Nernst
+    class: lsu
+    via: on-board 14point7
+  - pin: 10
+    silk: null
+    net: LSU1_IP
+    mcu: null
+    function: LSU IP
+    class: lsu
+    via: on-board 14point7
+  - pin: 11
+    silk: null
+    net: VIN
+    mcu: PB1
+    function: Battery +12V
+    class: power
+    adc: EFI_ADC_9
+  - pin: 12
+    silk: null
+    net: IN_A1
+    mcu: PC5
+    function: CLT
+    class: analog
+    adc: EFI_ADC_15
+    pullup_ohms: 2490
+    note: Permanent 2.49 k pull-up to +5V. Use for CLT/IAT, not a TPS pot.
+  - pin: 13
+    silk: null
+    net: IN_A2
+    mcu: PB0
+    function: IAT
+    class: analog
+    adc: EFI_ADC_8
+    pullup_ohms: 2490
+    note: Permanent 2.49 k pull-up to +5V.
+  - pin: 14
+    silk: null
+    net: IN_A3
+    mcu: PA7
+    function: TPS
+    class: analog
+    adc: EFI_ADC_7
+    note: No 2.49 k pull-up. Suitable for a 0-5 V pot.
+  - pin: 15
+    silk: null
+    net: IN_A4
+    mcu: PC4
+    function: Analog 4
+    class: analog
+    adc: EFI_ADC_14
+  - pin: 16
+    silk: null
+    net: IN_A5
+    mcu: PA5
+    function: Analog 5
+    class: analog
+    adc: EFI_ADC_5
+  - pin: 17
+    silk: null
+    net: IN_HALL5
+    mcu: PF13
+    function: Hall 5
+    class: hall
+  - pin: 18
+    silk: null
+    net: CAN1_H
+    mcu: PD0
+    function: CAN1 High
+    class: can
+    note: MAX3051 transceiver; MCU PD0/PD1
+  - pin: 19
+    silk: null
+    net: CAN1_L
+    mcu: PD1
+    function: CAN1 Low
+    class: can
+  - pin: 20
+    silk: null
+    net: LSU1_IA
+    mcu: null
+    function: LSU IA
+    class: lsu
+    via: on-board 14point7
+  - pin: 21
+    silk: null
+    net: LSU1_VGND
+    mcu: null
+    function: LSU VGND
+    class: lsu
+    via: on-board 14point7
+  - pin: 22
+    silk: null
+    net: OUT_+5V
+    mcu: null
+    function: Sensor +5V
+    class: power
+  - pin: 23
+    silk: INJ1
+    net: OUT_L8
+    mcu: PD13
+    function: Injector 1
+    class: inj
+  - pin: 24
+    silk: INJ2
+    net: OUT_L7
+    mcu: PD12
+    function: Injector 2
+    class: inj
+  - pin: 25
+    silk: INJ3
+    net: OUT_L6
+    mcu: PD11
+    function: Injector 3
+    class: inj
+  - pin: 26
+    silk: INJ4
+    net: OUT_L5
+    mcu: PD10
+    function: Injector 4
+    class: inj
+  - pin: 27
+    silk: FUEL
+    net: OUT_L4
+    mcu: PD9
+    function: Fuel pump
+    class: ls
+  - pin: 28
+    silk: FAN
+    net: OUT_L3
+    mcu: PD8
+    function: Fan
+    class: ls
+  - pin: 29
+    silk: IDLE
+    net: OUT_L2
+    mcu: PD7
+    function: Idle solenoid
+    class: ls
+  - pin: 30
+    silk: BOOST
+    net: OUT_L1
+    mcu: PD6
+    function: Boost solenoid
+    class: ls
+  - pin: 31
+    silk: TACHO
+    net: OUT_L9
+    mcu: PD14
+    function: Tachometer
+    class: ls
+  - pin: 32
+    silk: null
+    net: LSU1_HEATER-
+    mcu: null
+    function: LSU heater minus
+    class: lsu
+    via: on-board 14point7 / VNLD5090
+  - pin: 33
+    silk: null
+    net: GND
+    mcu: null
+    function: Power ground
+    class: gnd
+docs:
+  release_links:
+    rusefi_tag: opf33-rusefi-latest
+    fome_tag: opf33-fome-latest
+    rusefi_assets:
+    - rusefi.bin
+    - rusefi.hex
+    - rusefi.srec
+    - rusefi_tunerstudio.ini
+    fome_assets:
+    - fome.bin
+    - fome_update.srec
+    - fome_tunerstudio.ini
+    style: board_branch
+    rusefi_branch_dir: rusefi
+    fome_branch_dir: fome
+    rusefi_branch_assets:
+      bin: rusefi_firmware.bin
+      ini: rusefi_tunerstudio.ini
+      hex: rusefi_firmware.hex
+      srec: rusefi_firmware.srec
+      console: rusefi_console.zip
+    fome_branch_assets:
+      bin: fome_firmware.bin
+      ini: fome_tunerstudio.ini
+      srec: fome_firmware.srec
+      console: fome_console.zip
+  images:
+    pcb_top: https://github.com/opelpanfan/OPF_ECU/assets/12942077/39e08eaa-056f-47bf-bc9c-adae13f9d11d
+    pcb_back: https://github.com/opelpanfan/OPF_ECU/assets/12942077/b780d395-3b82-46ec-8465-948469103bc0
+    hall_setup: https://github.com/opelpanfan/OPF_ECU/assets/12942077/3e8c9698-e620-4e2e-aa5c-6c7e95a41adc
+    vr_setup: https://github.com/opelpanfan/OPF_ECU/assets/12942077/83f4c142-d014-474f-8db0-7748346d7d1c
+  notes:
+  - V1.1 uses a single 33-pin connector. The older Black/Grey 48-pin tables in earlier manuals do not
+    apply.
+  - V1.1 removed the throttle-body (DBW), EGT and stepper connectors. TPS goes on IN_A3 (pin 14), not
+    on a separate DBW plug.
+  - IN_A1 and IN_A2 have permanent 2.49 k pull-ups to +5V (R85/R86). Use them for CLT and IAT. Do not
+    wire a TPS pot to pins 12 or 13.
+  - Primary trigger default is Hall on pin 8 (PG1) with JP4 in the Hall position, 60-2.
+  - Back silkscreen labels exist only on pins 23-31 (INJ1-4, FUEL, FAN, IDLE, BOOST, TACHO).
+  - On-board MAP is PA3 (MPXHZ6400). On-board wideband linear output is PA4 (14point7). Battery sense
+    is PB1 with a 7.34 divider.
+  - CAN2, knock, ETB, EGT and the idle stepper are disabled in the firmware defaults.
+  host_repo: opelpanfan/OPF_ECU
+  host_branch: opf33
+  pages_base: https://opelpanfan.github.io/OPF_ECU

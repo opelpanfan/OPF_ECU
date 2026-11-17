@@ -1,0 +1,146 @@
+# OPF33
+
+OPF33 V1.1 - STM32F407ZGT7 ECU.
+
+Generated from `config/opf33/board.yaml`. Do not hand-edit this file; change the YAML and re-run `tools/boardgen/generate_board.py`.
+
+## Features
+
+- 4 Injectors
+- 4 Coils
+- 5 Low-side outputs (fuel pump, fan, idle, boost, tacho)
+- 2 VR / 5 Hall trigger inputs (shared via jumpers)
+- 5 analogue 0-5 V inputs on the connector (IN_A1-IN_A5)
+- 1 CANbus
+- On-board wideband (14point7)
+- On-board MAP (onboard_mpxhz6400)
+- On-board barometer (lps25)
+- On-board SD card
+- Bluetooth
+- USB
+
+## Firmware
+
+Downloads are public. Badge links point at the `opf33` board branch of `opelpanfan/OPF_ECU`
+(raw files under `rusefi/` and `fome/`). GitHub Releases are also published from `master-grok`.
+(Right click and 'Save link as...')
+
+## FOME (RUSEFI fork) Firmware
+
+Stable URL tag: `opf33-fome-latest`. Flash `fome.bin` for a first DFU install (OpenBLT + FOME). Use `fome_update.srec` for later OpenBLT updates.
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download FOME Firmware](https://custom-icon-badges.demolab.com/badge/-FOME%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download FOME Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/opf33/fome/fome_firmware.bin)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download FOME Update SREC](https://custom-icon-badges.demolab.com/badge/-FOME%20Update%20SREC-blue?style=for-the-badge&logo=download&logoColor=white "Download FOME Update SREC")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/opf33/fome/fome_firmware.srec)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download FOME TunerStudio INI](https://custom-icon-badges.demolab.com/badge/-FOME%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download FOME TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/opf33/fome/fome_tunerstudio.ini)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+
+## RUSEFI Firmware
+
+Stable URL tag: `opf33-rusefi-latest`.
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download RusEFI Firmware](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/opf33/rusefi/rusefi_firmware.bin)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download RusEFI HEX](https://custom-icon-badges.demolab.com/badge/-RusEFI%20HEX-blue?style=for-the-badge&logo=download&logoColor=white "Download RusEFI HEX")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/opf33/rusefi/rusefi_firmware.hex)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download RusEFI SREC](https://custom-icon-badges.demolab.com/badge/-RusEFI%20SREC-blue?style=for-the-badge&logo=download&logoColor=white "Download RusEFI SREC")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/opf33/rusefi/rusefi_firmware.srec)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download RusEFI TunerStudio INI](https://custom-icon-badges.demolab.com/badge/-RusEFI%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download RusEFI TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/opf33/rusefi/rusefi_tunerstudio.ini)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+
+## Interactive Pinout Manual
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-Pinout%20Manual-black?style=for-the-badge&logo=download&logoColor=white "Pinout Manual")](https://opelpanfan.github.io/OPF_ECU/opf33.html)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+OPF33 V1.1 uses a single **33-pin** connector. Pins 23-31 have back-silkscreen labels. The interactive page is [https://opelpanfan.github.io/OPF_ECU/opf33.html](https://opelpanfan.github.io/OPF_ECU/opf33.html) (live after this file is on `main`).
+
+| Pin | Back silk | Net | MCU | Function | Notes |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | - | OUT_H3 | PE13 | Ignition 3 | - |
+| 2 | - | OUT_H4 | PE12 | Ignition 4 | - |
+| 3 | - | OUT_H1 | PE15 | Ignition 1 | - |
+| 4 | - | OUT_H2 | PE14 | Ignition 2 | - |
+| 5 | - | TRIGGER2- | PE8 | Trigger 2 minus | Hall via JP6 2-3, VR via JP6 2-1 |
+| 6 | - | TRIGGER2+ | PE9 | Trigger 2 plus | Hall via JP5 2-3, VR via JP5 2-1 |
+| 7 | - | TRIGGER1- | PE7 | Trigger 1 minus | Hall via JP13 2-3, VR via JP13 2-1 |
+| 8 | - | TRIGGER1+ | PG1 / PE2 (VR plus) | Trigger 1 plus (Hall) | Hall via JP4 2-3 (PG1), VR via JP4 2-1 (PE2) |
+| 9 | - | LSU1_NERNST | on-board 14point7 | LSU Nernst | via on-board 14point7 |
+| 10 | - | LSU1_IP | on-board 14point7 | LSU IP | via on-board 14point7 |
+| 11 | - | VIN | PB1 | Battery +12V | - |
+| 12 | - | IN_A1 | PC5 | CLT | Permanent 2.49 k pull-up to +5V. Use for CLT/IAT, not a TPS pot. |
+| 13 | - | IN_A2 | PB0 | IAT | Permanent 2.49 k pull-up to +5V. |
+| 14 | - | IN_A3 | PA7 | TPS | No 2.49 k pull-up. Suitable for a 0-5 V pot. |
+| 15 | - | IN_A4 | PC4 | Analog 4 | - |
+| 16 | - | IN_A5 | PA5 | Analog 5 | - |
+| 17 | - | IN_HALL5 | PF13 | Hall 5 | - |
+| 18 | - | CAN1_H | PD0 | CAN1 High | MAX3051 transceiver; MCU PD0/PD1 |
+| 19 | - | CAN1_L | PD1 | CAN1 Low | - |
+| 20 | - | LSU1_IA | on-board 14point7 | LSU IA | via on-board 14point7 |
+| 21 | - | LSU1_VGND | on-board 14point7 | LSU VGND | via on-board 14point7 |
+| 22 | - | OUT_+5V | - | Sensor +5V | - |
+| 23 | INJ1 | OUT_L8 | PD13 | Injector 1 | - |
+| 24 | INJ2 | OUT_L7 | PD12 | Injector 2 | - |
+| 25 | INJ3 | OUT_L6 | PD11 | Injector 3 | - |
+| 26 | INJ4 | OUT_L5 | PD10 | Injector 4 | - |
+| 27 | FUEL | OUT_L4 | PD9 | Fuel pump | - |
+| 28 | FAN | OUT_L3 | PD8 | Fan | - |
+| 29 | IDLE | OUT_L2 | PD7 | Idle solenoid | - |
+| 30 | BOOST | OUT_L1 | PD6 | Boost solenoid | - |
+| 31 | TACHO | OUT_L9 | PD14 | Tachometer | - |
+| 32 | - | LSU1_HEATER- | on-board 14point7 / VNLD5090 | LSU heater minus | via on-board 14point7 / VNLD5090 |
+| 33 | - | GND | - | Power ground | - |
+
+## PCB Layout
+
+## TOP
+![front](https://github.com/opelpanfan/OPF_ECU/assets/12942077/39e08eaa-056f-47bf-bc9c-adae13f9d11d)
+
+## BACK
+![back](https://github.com/opelpanfan/OPF_ECU/assets/12942077/b780d395-3b82-46ec-8465-948469103bc0)
+
+## Trigger configuration
+
+Primary trigger default is **hall** on connector pin 8 (PG1), wheel type **TT_TOOTHED_WHEEL_60_2**.
+
+| Jumper | Connector pins | Hall (2-3) | VR (2-1) |
+| --- | --- | --- | --- |
+| JP4 | 7 / 8 | PG1 | PE2 |
+
+Secondary trigger (unused in the default tune) is on pins [6, 5], jumpers JP5, JP6 (PE9 / PE8).
+
+CLT/IAT pull-ups are **permanent** 2.49 k resistors R85/R86 on IN_A1/IN_A2. There is no SW10-SW12 jumper block on this 33-pin board.
+
+### HALL Trigger Configuration
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/3e8c9698-e620-4e2e-aa5c-6c7e95a41adc)
+
+### VR Trigger Configuration
+
+![image](https://github.com/opelpanfan/OPF_ECU/assets/12942077/83f4c142-d014-474f-8db0-7748346d7d1c)
+
+## Notes
+
+- V1.1 uses a single 33-pin connector. The older Black/Grey 48-pin tables in earlier manuals do not apply.
+- V1.1 removed the throttle-body (DBW), EGT and stepper connectors. TPS goes on IN_A3 (pin 14), not on a separate DBW plug.
+- IN_A1 and IN_A2 have permanent 2.49 k pull-ups to +5V (R85/R86). Use them for CLT and IAT. Do not wire a TPS pot to pins 12 or 13.
+- Primary trigger default is Hall on pin 8 (PG1) with JP4 in the Hall position, 60-2.
+- Back silkscreen labels exist only on pins 23-31 (INJ1-4, FUEL, FAN, IDLE, BOOST, TACHO).
+- On-board MAP is PA3 (MPXHZ6400). On-board wideband linear output is PA4 (14point7). Battery sense is PB1 with a 7.34 divider.
+- CAN2, knock, ETB, EGT and the idle stepper are disabled in the firmware defaults.

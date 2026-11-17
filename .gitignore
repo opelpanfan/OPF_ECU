@@ -1,0 +1,3 @@
+.rusefi-build/
+__pycache__/
+*.pyc

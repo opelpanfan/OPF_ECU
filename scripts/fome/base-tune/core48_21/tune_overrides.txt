@@ -1,0 +1,63 @@
+# core48_21 (OPF48 v2.1) base tune overrides, applied on top of the FOME board defaults by
+# scripts/fome/apply_tune_overrides.py (build_fome.sh -> <variant>_base_tune.msq, or live to an ECU).
+# Pinout source: Benas' core48_21 connector table (see PINOUT.md). Values are FOME ini labels.
+# Note: the FOME ini names coils by its own "High Side N" numbering (G15 = "High Side 8"); the
+# connector numbering is Grey B1 = coil 1 = PG15 ... Grey B8 = coil 8 = PE15.
+
+# --- Injectors: Grey A1..A8 = PD6..PD13
+injectionPins1 = Low Side 1 (D6)
+injectionPins2 = Low Side 2 (D7)
+injectionPins3 = Low Side 3 (D8)
+injectionPins4 = Low Side 4 (D9)
+injectionPins5 = Low Side 5 (D10)
+injectionPins6 = Low Side 6 (D11)
+injectionPins7 = Low Side 7 (D12)
+injectionPins8 = Low Side 8 (D13)
+
+# --- Coils: Grey B1..B8 = PG15, PG8, PE10, PE11, PE12, PE13, PE14, PE15
+ignitionPins1 = High Side 8 (G15)
+ignitionPins2 = High Side 7 (G8)
+ignitionPins3 = High Side 6 (E10)
+ignitionPins4 = High Side 5 (E11)
+ignitionPins5 = High Side 4 (E12)
+ignitionPins6 = High Side 3 (E13)
+ignitionPins7 = High Side 2 (E14)
+ignitionPins8 = High Side 1 (E15)
+
+# --- Low side outputs (Black connector)
+fuelPumpPin = Low Side 12 (G3)
+fanPin = Low Side 13 (G4)
+boostControlPin = Low Side 14 (G5)
+idle_solenoidPin = Low Side 15 (G6)
+useStepperIdle = false
+isDoubleSolenoidIdle = false
+idleMode = Open Loop
+vvtPins1 = Low Side 16 (G7)
+tachOutputPin = Low Side 9 (D14 TACHO)
+
+# --- Analog inputs (Grey C1..C5); CLT/IAT use the on-board 2.49k pull-ups (SW10 B0 / A7 ON)
+tps1_1AdcChannel = Analog Inputs 1 (C5)
+clt_adcChannel = Analog Inputs 2 (B0)
+iat_adcChannel = Analog Inputs 3 (A7)
+oilPressure_hwChannel = Analog Inputs 4 (C4)
+lowPressureFuel_hwChannel = Analog Inputs 5 (A5)
+clt_bias_resistor = 2490
+iat_bias_resistor = 2490
+
+# --- Trigger: crank VR1 (Black C2/C3, PE2), cam VR2 (Black C5/C4, PE3)
+# 60-2 crank wheel; bench emulator alternative is 36-1 (trigger_type = 36/1). Cam is optional:
+# batch injection + wasted spark run without it; with a cam signal FOME decodes it as single tooth.
+trigger_type = 60/2
+skippedWheelOnCam = On crankshaft
+triggerInputPins1 = VR1 (E2)
+camInputs1 = VR2 (E3)
+vvtMode1 = Single Tooth
+
+# --- Engine (4 cyl even fire, from the Speeduino tune read from this board; firing order and
+# displacement are not stored by Speeduino -> FOME defaults 1-3-4-2 / 2.0 L, adjust for the engine)
+?cylindersCount = 4   # optional: newer FOME derives it from firingOrder
+firingOrder = 1-3-4-2
+displacement = 2.0
+injectionMode = Batch
+crankingInjectionMode = Simultaneous
+ignitionMode = Wasted Spark
