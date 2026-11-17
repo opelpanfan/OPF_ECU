@@ -133,7 +133,7 @@ CORE8_24C_MANUAL_AUX = {
 
 CORE8_FAMILY = {
     "core8_21", "core8_23", "core8_24ab", "core8_24c",
-    "core8_24c_celica", "core8_24c_manta_b234", "core8_24c_mitsubishi", "core8_24d",
+    "core8_24d",
 }
 
 UNUSED = [
