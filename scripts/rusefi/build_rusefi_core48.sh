@@ -243,8 +243,10 @@ for p in "$SCRIPT_DIR"/patches/*.patch; do
   [ -e "$p" ] || continue
   if git -C "$RUSEFI_DIR" apply --reverse --check "$p" 2>/dev/null; then
     echo "patch already applied: ${p##*/}"
-  else
+  elif git -C "$RUSEFI_DIR" apply --check "$p" 2>/dev/null; then
     git -C "$RUSEFI_DIR" apply "$p"; echo "applied patch: ${p##*/}"
+  else
+    echo "skipping patch ${p##*/} (does not apply to this rusEFI ref)"
   fi
 done
 
