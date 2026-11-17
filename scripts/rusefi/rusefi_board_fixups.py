@@ -55,6 +55,8 @@ def flatten_legacy_fields(src: str) -> str:
     )
     # 4G63 board used the old TT_MITSUBISHI alias; current rusEFI/FOME call it TT_MITSU_4G63_CAM.
     out = re.sub(r"\b(?:trigger_type_e::)?TT_MITSUBISHI\b", "trigger_type_e::TT_MITSU_4G63_CAM", out)
+    # Host/target -Werror=float-conversion: unsuffixed decimals are doubles.
+    out = re.sub(r"(engineConfiguration->[\w.]+\s*=\s*)(\d+\.\d+)(?![eEfF])", r"\1\2f", out)
     return out
 
 def fix(src: str) -> str:

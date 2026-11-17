@@ -290,7 +290,14 @@ if [ "${BASE_TUNE:-1}" = 1 ]; then
     || die "msq verification failed"
 fi
 
-(cd "$OUT" && sha256sum fome.bin fome_update.srec fome_bl.srec fome.elf fome_tunerstudio.ini fome_console.zip *_base_tune.msq *_base_tune.bin *-manual.md 2>/dev/null > SHA256SUMS)
+(cd "$OUT" && {
+  exist=()
+  for f in fome.bin fome_update.srec fome_bl.srec fome.elf fome_tunerstudio.ini fome_console.zip \
+           *_base_tune.msq *_base_tune.bin *-manual.md; do
+    [ -f "$f" ] && exist+=("$f")
+  done
+  sha256sum "${exist[@]}" > SHA256SUMS
+})
 cat > "$OUT/build-info.txt" <<INFO
 variant=$VARIANT
 fome_board=$FOME_BOARD
