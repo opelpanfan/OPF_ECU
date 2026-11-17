@@ -1,0 +1,9 @@
+variant=opf33
+fome_board=opf33
+fome_ref=3b772a890ae0703793b14f08822c20f34b386b8c
+fome_commit=3b772a890ae0703793b14f08822c20f34b386b8c
+signature=rusEFI (FOME) 3b772a890a.2026.11.17.opf33.3308290529
+toolchain=arm-gnu-toolchain-11.3.rel1-x86_64-arm-none-eabi
+config_source=scripts/fome/board-overlay/opf33
+built_utc=2026-11-17T20:47:05Z
+source_date_epoch=1794943003
