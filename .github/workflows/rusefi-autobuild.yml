@@ -97,10 +97,8 @@ jobs:
             prerelease=true   # not an upstream release (branch/sha)
           fi
 
-          python3 scripts/ci/list_boards.py --json > /tmp/boards.json
-          python3 -c "import json; d=json.load(open('/tmp/boards.json'));\nprint('### Skipped config folders') if d['skipped'] else None;\n[print('- `%s`: %s' % (s['name'], s['reason'])) for s in d['skipped']]" >> "$GITHUB_STEP_SUMMARY"
-          mapfile -t all_boards < <(python3 scripts/ci/list_boards.py)
-          all="${all_boards[*]}"
+          python3 scripts/ci/list_boards.py --summary >> "$GITHUB_STEP_SUMMARY"
+          all=$(python3 scripts/ci/list_boards.py | tr "\n" " ")
 
           if [ "$EVENT" = workflow_dispatch ]; then
             variants="${IN_VARIANT:-all}"; [ "$variants" = all ] && variants="$all"

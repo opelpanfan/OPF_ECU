@@ -58,12 +58,22 @@ def fome_overlay(board: str) -> str:
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--json", action="store_true", help="print {boards,skipped,fome_overlay}")
+    p.add_argument("--summary", action="store_true", help="print markdown skip/board list for the job summary")
     p.add_argument("--fome-overlay", metavar="BOARD", help="print the FOME overlay path for one board")
     args = p.parse_args()
     if args.fome_overlay:
         print(fome_overlay(args.fome_overlay))
         return 0
     boards, skipped = list_boards()
+    if args.summary:
+        if skipped:
+            print("### Skipped config folders")
+            for n, r in skipped:
+                print(f"- `{n}`: {r}")
+        print("### Boards")
+        for b in boards:
+            print(f"- `{b}`")
+        return 0
     if args.json:
         print(json.dumps({
             "boards": boards,

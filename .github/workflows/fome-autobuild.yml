@@ -92,29 +92,13 @@ jobs:
             workflow_dispatch) [ "$IN_DRY_RUN" = false ] && publish=true ;;
           esac
 
-          mapfile -t all_boards < <(python3 scripts/ci/list_boards.py)
-          python3 scripts/ci/list_boards.py --json | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-for s in d.get('skipped',[]):
-    print(f\"::notice::skip {s['name']}: {s['reason']}\")
-    print(f\"- skip \`{s['name']}\`: {s['reason']}\")
-" | tee -a "$GITHUB_STEP_SUMMARY" >/tmp/skips.txt || true
-          grep '^::' /tmp/skips.txt >> "$GITHUB_STEP_SUMMARY" || true
-          # Log skips in the summary explicitly
-          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
-import json,subprocess
-d=json.loads(subprocess.check_output(["python3","scripts/ci/list_boards.py","--json"], text=True))
-if d["skipped"]:
-    print("### Skipped config folders")
-    for s in d["skipped"]:
-        print(f"- `{s['name']}`: {s['reason']}")
-PY
+          python3 scripts/ci/list_boards.py --summary >> "$GITHUB_STEP_SUMMARY"
+          all=$(python3 scripts/ci/list_boards.py | tr "\n" " ")
 
           if [ "$EVENT" = workflow_dispatch ]; then
-            variants="${IN_VARIANT:-all}"; [ "$variants" = all ] && variants="${all_boards[*]}"
+            variants="${IN_VARIANT:-all}"; [ "$variants" = all ] && variants="$all"
           else
-            variants="${all_boards[*]}"
+            variants="$all"
           fi
 
           todo=()
