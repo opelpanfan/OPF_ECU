@@ -40,8 +40,25 @@ def fix_vbatt(src: str) -> str:
         "engineConfiguration->vbattDividerCoeff = 7.34f",
     )
 
+def flatten_legacy_fields(src: str) -> str:
+    """engineConfiguration->specs and a few old names were flattened/renamed upstream."""
+    out = re.sub(
+        r"engineConfiguration->specs\.(cylindersCount|firingOrder|displacement)\b",
+        r"engineConfiguration->\1",
+        src,
+    )
+    out = re.sub(r"\s*engineConfiguration->vehicleWeight\s*=[^;]*;", "", out)
+    out = re.sub(
+        r"setAlgorithm\(\s*LM_SPEED_DENSITY\s*\)",
+        "setAlgorithm(engine_load_mode_e::LM_SPEED_DENSITY)",
+        out,
+    )
+    # 4G63 board used the old TT_MITSUBISHI alias; current rusEFI/FOME call it TT_MITSU_4G63_CAM.
+    out = re.sub(r"\bTT_MITSUBISHI\b", "TT_MITSU_4G63_CAM", out)
+    return out
+
 def fix(src: str) -> str:
-    out = fix_vbatt(convert_leds(src))
+    out = flatten_legacy_fields(fix_vbatt(convert_leds(src)))
     if "setup_custom_board_overrides" in out:
         return out
     hooks = []

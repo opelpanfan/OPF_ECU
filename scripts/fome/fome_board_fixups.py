@@ -28,6 +28,21 @@ def convert_lua_to_fome(s):
     )
     return s2 if n else s
 
+
+def flatten_legacy_fields(src):
+    out = re.sub(
+        r'engineConfiguration->specs\.(cylindersCount|firingOrder|displacement)\b',
+        r'engineConfiguration->\1',
+        src,
+    )
+    out = re.sub(
+        r'setAlgorithm\(\s*LM_SPEED_DENSITY\s*\)',
+        'setAlgorithm(engine_load_mode_e::LM_SPEED_DENSITY)',
+        out,
+    )
+    out = re.sub(r'\bTT_MITSUBISHI\b', 'TT_MITSU_4G63_CAM', out)
+    return out
+
 def convert_rusefi_hooks_to_fome(s):
     """Inverse of rusefi_board_fixups.py when this FOME still uses weak setBoard* hooks."""
     s = s.replace('#include "board_overrides.h"\n', '')
@@ -98,7 +113,23 @@ if not fome_has_rusefi_hooks():
     if s2 != s:
         applied.append('board_configuration.cpp: rusEFI setup_custom_board_overrides/setLuaScript -> FOME setBoard* hooks')
         s = s2
+s2 = flatten_legacy_fields(s)
+if s2 != s:
+    applied.append('board_configuration.cpp: flattened specs/TT_MITSUBISHI/setAlgorithm for current FOME')
+    s = s2
 c.write_text(s)
+
+# FOME's Makefile requires SHORT_BOARD_NAME as a make variable. Older ECU_Build
+# board.mk files only set it as -DSHORT_BOARD_NAME=... in DDEFS.
+mkp = board / 'board.mk'
+if mkp.exists():
+    mk = mkp.read_text()
+    if re.search(r'^SHORT_BOARD_NAME\s*[:?]?=', mk, re.M) is None:
+        m = re.search(r'-DSHORT_BOARD_NAME=([A-Za-z0-9_]+)', mk)
+        if m:
+            mk = 'SHORT_BOARD_NAME = %s\n' % m.group(1) + mk
+            mkp.write_text(mk)
+            applied.append('board.mk: set SHORT_BOARD_NAME=%s (was only in DDEFS)' % m.group(1))
 
 # rusEFI-only helper file
 env = board / 'board.env'

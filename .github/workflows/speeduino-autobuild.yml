@@ -320,13 +320,20 @@ jobs:
           name: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
           path: out
       - uses: actions/checkout@v4
+        id: br
         if: steps.map.outputs.branch != ''
+        continue-on-error: true
         with:
           ref: ${{ steps.map.outputs.branch }}
           path: fw
           fetch-depth: 50
+      - name: Skip missing board branch
+        if: steps.map.outputs.branch != '' && steps.br.outcome != 'success'
+        run: |
+          echo "::warning::board branch ${{ steps.map.outputs.branch }} does not exist - firmware was built; skip updating the branch"
+          echo "Board branch \`${{ steps.map.outputs.branch }}\` does not exist yet - firmware was built; nothing committed." >> "$GITHUB_STEP_SUMMARY"
       - name: ${{ needs.plan.outputs.publish == 'true' && 'Commit' || 'Dry run (plan only)' }} ${{ steps.map.outputs.branch }}:${{ steps.map.outputs.dir }}/ + readme SPEEDUINO section
-        if: steps.map.outputs.branch != ''
+        if: steps.map.outputs.branch != '' && steps.br.outcome == 'success'
         env:
           BRANCH: ${{ steps.map.outputs.branch }}
           DIR: ${{ steps.map.outputs.dir }}

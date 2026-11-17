@@ -17,7 +17,7 @@ def _stamp():
     if sde:
         return datetime.datetime.fromtimestamp(int(sde), datetime.timezone.utc)
     return datetime.datetime.now(datetime.timezone.utc)
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape, unescape
 
 TYPES = {'U08': 'B', 'S08': 'b', 'U16': 'H', 'S16': 'h', 'U32': 'I', 'S32': 'i', 'F32': 'f', 'F64': 'd'}
 
@@ -141,7 +141,7 @@ def encode_back(consts, msq_text, page_size):
     """Re-encode msq values into a page image (bytes not covered by any constant stay 0)."""
     vals = {}
     for m in re.finditer(r'<constant[^>]*name="([^"]+)"[^>]*>(.*?)</constant>', msq_text, re.S):
-        vals[m.group(1)] = m.group(2).strip()
+        vals[m.group(1)] = unescape(m.group(2).strip())
     buf = bytearray(page_size); covered = bytearray(page_size)
     for c in consts:
         s = vals[c['name']]; off = c['off']
