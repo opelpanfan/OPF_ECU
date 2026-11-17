@@ -2,13 +2,16 @@
 
 This branch is the public, single source of truth for OPF board configs and
 firmware CI. It follows the existing OPF_ECU autobuild conventions
-(`scripts/rusefi`, `scripts/fome`, GitHub Releases, artifacts on per-board
-branches) and vendors every `ECU_Build` `config/<board>` folder so CI no longer
-needs the private repo.
+(`scripts/rusefi`, `scripts/fome`, `scripts/speeduino`, GitHub Releases,
+artifacts on per-board branches) and vendors every STM32F407 `config/<board>`
+folder so CI no longer needs the private ECU_Build repo.
 
 Do not push this work to `main` or `master`. Scheduled workflows still only run
 from the default branch (`main`); until these workflow files are on `main`,
 builds start from a push to `master-grok` or `workflow_dispatch`.
+
+All boards on this branch are STM32F407. Teensy is not built, and Teensy
+targets are not present in the rusEFI, FOME, or Speeduino matrices.
 
 ## Layout
 
@@ -20,8 +23,9 @@ builds start from a push to `master-grok` or `workflow_dispatch`.
 | `config/opf33_fome/` | FOME-specific OPF33 overlay (`compile_opf33.sh`, old FOME hook API) |
 | `tools/boardgen/` | Generates rusEFI/FOME overlays, the manual, and `docs/<board>.html` |
 | `docs/opf33.html` | Generated 33-pin V1.1 pinout page. Live on GitHub Pages only after it is on `main`. |
-| `scripts/rusefi/` | Shared rusEFI build script (CI + local), already used on `master-rusefi-grok` |
-| `scripts/fome/` | Shared FOME build script (CI + local), already used on `master-fome-grok` |
+| `scripts/rusefi/` | Shared rusEFI build script (CI + local) |
+| `scripts/fome/` | Shared FOME build script (CI + local) |
+| `scripts/speeduino/` | Shared Speeduino build script (CI + local), official `speeduino/speeduino` |
 
 CI still builds the hand-written `config/` files (known-good fallback). Generated
 overlays live under `config/opf33/generated/` for review.
@@ -30,21 +34,32 @@ overlays live under `config/opf33/generated/` for review.
 
 - rusEFI: `df128dec524d820bb767bcc503d8561ef01e258c`
 - FOME: `3b772a890ae0703793b14f08822c20f34b386b8c`
+- Speeduino: `202501.7` (commit `cd3d0e38d276a7bd087a9dc86fd976780539ce8f` on `speeduino/speeduino`)
 
 `workflow_dispatch` can override `ref` (including `latest`) and `variant`.
-Publishing a release and committing firmware to the board branch (`opf33/rusefi`
-or `opf33/fome`) happens only when `dry_run=false`. Push validation never
-publishes.
+Publishing a release and committing firmware to the board branch happens only
+when `dry_run=false`. Push validation never publishes.
 
 ## Local build
 
 ```sh
 scripts/rusefi/build_rusefi_core48.sh --ref df128dec524d820bb767bcc503d8561ef01e258c --variant opf33
 scripts/fome/build_fome.sh --ref 3b772a890ae0703793b14f08822c20f34b386b8c --variant opf33
+scripts/speeduino/build_speeduino.sh --ref 202501.7 --variant opf33
 python3 tools/boardgen/generate_board.py config/opf33/board.yaml --docs-dir docs
 ```
 
-## Other boards
+## Speeduino board coverage
 
-Every ECU_Build `config/<board>` folder is on this branch. Matrix builds for the
-other boards come after OPF33 rusEFI and FOME are green and a release exists.
+A Speeduino `board-overlay/<variant>/board.json` is required to build a board.
+Default matrix variants are every overlay present (currently `opf33` and
+`core48_21`). Other STM32F407 configs are in `config/` for rusEFI/FOME but are
+not in the Speeduino matrix yet because their `board_configuration.cpp` does
+not spell out a complete Speeduino pin map (fuel/fan/idle/CLT/IAT/TPS often
+missing). `opf33_fome` is the same hardware as `opf33`, not a second Speeduino
+board. Teensy boards are not built.
+
+## Shell scripts on this branch
+
+Every `.sh` file was checked against `.github/workflows` and `scripts/` before
+any deletion. All current scripts are referenced; none were removed.

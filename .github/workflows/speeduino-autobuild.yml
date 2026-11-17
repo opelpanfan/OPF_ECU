@@ -1,0 +1,421 @@
+name: Speeduino autobuild
+
+# Auto-build Speeduino firmware (+ TunerStudio ini, base tune) for OPF boards whenever speeduino/speeduino
+# publishes a new release, publish it as GitHub Release speeduino-<tag>-<variant> and commit it to the board
+# branch (<variant>, e.g. core48_21) under speeduino/. Same layout as the rusEFI / FOME workflows
+# (rusefi-core48-autobuild.yml, fome-autobuild.yml). Build logic lives in scripts/speeduino/build_speeduino.sh;
+# CI calls it with the same arguments as a local build. Publishing is never done by hand.
+#
+# Triggers:
+# - schedule (every 6h): resolves the latest upstream release and builds + publishes each variant whose
+#   release speeduino-<tag>-<variant> is missing (or whose board branch/readme section is outdated).
+# - workflow_dispatch: ref (tag/branch, "latest"), variant (default core48_21, or "all"), dry_run (default
+#   true = build + artifacts only, no release, no board-branch commit; the planned board-branch change is
+#   printed), force (build even if already published; never overwrites an existing release).
+#   NOTE: GitHub runs schedule and workflow_dispatch only for workflows on the DEFAULT branch (main). While
+#   this file lives only on master-speeduino-grok both are inert; copying it to main (Benas' decision)
+#   enables them.
+# - push to master-grok (scripts/speeduino/**, this file): always builds all variants (validation)
+#   and publishes what is missing: creates speeduino-<tag>-<variant> if it does not exist and commits to the
+#   board branch only if speeduino/ or the readme SPEEDUINO section would change. Idempotent.
+# Board branch: only <firmware_dir>/ (speeduino/) and the text between <!-- SPEEDUINO:START/END --> in the
+# readme are ever modified (guard before commit, after every rebase and after the push); plain push, no force.
+
+on:
+  schedule:
+    - cron: '41 */6 * * *'   # poll speeduino/speeduino releases every 6h (default branch only)
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Speeduino tag/branch, "latest", or a pinned commit (official speeduino/speeduino)'
+        required: false
+        default: '202501.7'
+      variant:
+        description: 'Board variant (scripts/speeduino/board-overlay/<variant>), comma list, or "all" (STM32F407 only; no Teensy)'
+        required: false
+        default: all
+      dry_run:
+        description: 'Build + upload artifacts only: no GitHub release, no commit to the board branch (planned diff is printed)'
+        type: boolean
+        required: false
+        default: true
+      force:
+        description: 'Build even if release speeduino-<tag>-<variant> exists and the board branch is current (never overwrites the release)'
+        type: boolean
+        required: false
+        default: false
+  push:
+    branches: [master-grok]
+    paths:
+      - 'scripts/speeduino/**'
+      - 'config/**'
+      - '.github/workflows/speeduino-autobuild.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: speeduino-${{ github.ref }}-${{ github.event.inputs.variant || 'all' }}
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: '3.12'
+  PLATFORMIO_VERSION: '6.2.0'
+  STM32_PLATFORM: 'platformio/ststm32@19.5.0'
+  SPEEDUINO_REPO: speeduino/speeduino
+
+jobs:
+  plan:
+    name: Resolve Speeduino ref / compare with last build
+    runs-on: ubuntu-latest
+    outputs:
+      speeduino_tag: ${{ steps.plan.outputs.speeduino_tag }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      any: ${{ steps.plan.outputs.any }}
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/speeduino
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          IN_REF: ${{ github.event.inputs.ref }}
+          IN_VARIANT: ${{ github.event.inputs.variant }}
+          IN_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          IN_FORCE: ${{ github.event.inputs.force }}
+        run: |
+          set -euo pipefail
+          DEFAULT_REF="202501.7"
+          tag=$(scripts/speeduino/build_speeduino.sh --resolve-only --ref "${IN_REF:-$DEFAULT_REF}")
+          [[ "$tag" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid Speeduino ref '$tag'"; exit 1; }
+
+          publish=false
+          case "$EVENT" in
+            schedule) publish=true ;;
+            # Push to master-grok is validation only (same as rusEFI/FOME on this branch).
+            workflow_dispatch) [ "$IN_DRY_RUN" = false ] && publish=true ;;
+          esac
+
+          all=$(cd scripts/speeduino/board-overlay && for f in */board.json; do
+            v="${f%%/*}"
+            case "$v" in *teensy*|*Teensy*|*TEENSY*) echo "skipping Teensy overlay $v" >&2; continue ;; esac
+            printf '%s ' "$v"
+          done)
+          if [ "$EVENT" = workflow_dispatch ]; then
+            variants="${IN_VARIANT:-all}"; [ "$variants" = all ] && variants="$all"
+          else
+            variants="$all"
+          fi
+          todo=()
+          for v in ${variants//,/ }; do
+            case "$v" in *teensy*|*Teensy*|*TEENSY*) echo "::warning::skipping Teensy variant $v"; continue ;; esac
+            bj="scripts/speeduino/board-overlay/$v/board.json"
+            [ -f "$bj" ] || { echo "::error::unknown variant $v (no $bj)"; exit 1; }
+            rtag="speeduino-$tag-$v"
+            if gh release view "$rtag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then rel=true; else rel=false; fi
+            # what the board branch carries: <dir>/build-info.json tag + a current readme SPEEDUINO section
+            br=$(jq -r '.firmware_branch // empty' "$bj")
+            dir=$(jq -r '.firmware_dir // "speeduino"' "$bj")
+            readme=$(jq -r '.firmware_readme // empty' "$bj")
+            have=""; readme_ok=true
+            if [ -n "$br" ]; then
+              have=$(gh api -H 'Accept: application/vnd.github.raw' "repos/$GITHUB_REPOSITORY/contents/$dir/build-info.json?ref=$br" 2>/dev/null \
+                     | jq -r '.speeduino_tag // empty' 2>/dev/null || true)
+              if [ -n "$readme" ]; then
+                gh api -H 'Accept: application/vnd.github.raw' "repos/$GITHUB_REPOSITORY/contents/$readme?ref=$br" > /tmp/fw-readme 2>/dev/null || : > /tmp/fw-readme
+                python3 scripts/speeduino/readme_section.py current /tmp/fw-readme --tag "$tag" || readme_ok=false
+              fi
+            fi
+            published=false
+            if [ "$rel" = true ] && { [ -z "$br" ] || { [ "$have" = "$tag" ] && [ "$readme_ok" = true ]; }; }; then published=true; fi
+            build=true
+            case "$EVENT" in
+              schedule) [ "$published" = true ] && build=false ;;
+              workflow_dispatch) [ "$published" = true ] && [ "$IN_FORCE" != true ] && build=false ;;
+              push) ;;  # always build (validation); release/branch are only written if missing/changed
+            esac
+            echo "$v: release $rtag exists=$rel, ${br:-<no board branch>}:$dir/ has '${have:-nothing}', readme section current=$readme_ok -> published=$published, build=$build"
+            echo "- \`$v\`: release \`$rtag\` exists=$rel, board branch \`${br:-none}\` has \`${have:-nothing}\`, readme current=$readme_ok -> build=$build" >> "$GITHUB_STEP_SUMMARY"
+            [ "$build" = true ] && todo+=("$v")
+          done
+          matrix=$(printf '%s\n' "${todo[@]+"${todo[@]}"}" | jq -R . | jq -sc 'map(select(length>0))')
+          {
+            echo "speeduino_tag=$tag"; echo "matrix=$matrix"
+            echo "any=$([ "$matrix" != "[]" ] && echo true || echo false)"; echo "publish=$publish"
+          } | tee -a "$GITHUB_OUTPUT"
+          echo "### Speeduino \`$tag\` ($EVENT): variants \`$matrix\`, publish=$publish" >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4   # shallow (depth 1)
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: .github/workflows/speeduino-autobuild.yml
+
+      - name: Cache PlatformIO (pinned platform, toolchain, libraries)
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ env.PLATFORMIO_VERSION }}-${{ env.STM32_PLATFORM }}-${{ needs.plan.outputs.speeduino_tag }}
+          restore-keys: |
+            pio-${{ runner.os }}-${{ env.PLATFORMIO_VERSION }}-${{ env.STM32_PLATFORM }}-
+
+      - name: Install PlatformIO ${{ env.PLATFORMIO_VERSION }} (pinned)
+        run: python -m pip install "platformio==${PLATFORMIO_VERSION}"
+
+      - name: Build (scripts/speeduino/build_speeduino.sh, same args as locally)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REF: ${{ needs.plan.outputs.speeduino_tag }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -o pipefail
+          scripts/speeduino/build_speeduino.sh --ref "$REF" --variant "$VARIANT" -j "$(nproc)" \
+            --work "$RUNNER_TEMP/speeduino-work" --out "$GITHUB_WORKSPACE/out" 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Report build failure
+        if: failure()
+        run: |
+          log="$RUNNER_TEMP/build.log"
+          [ -f "$log" ] || exit 0
+          enc() { sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g'; }
+          echo "::error title=build errors::$(grep -nE 'ERROR|PATCH CONFLICT|[Ee]rror[: ]|FAILED|No such file' "$log" | tail -25 | cut -c1-300 | enc)"
+          echo "::error title=build log tail::$(tail -40 "$log" | cut -c1-300 | enc)"
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: speeduino-build-log-${{ matrix.variant }}
+          path: ${{ runner.temp }}/build.log
+          if-no-files-found: ignore
+
+      - name: Verify checksums + summary
+        working-directory: out/${{ matrix.variant }}
+        run: |
+          sha256sum -c SHA256SUMS
+          {
+            echo "### ${{ matrix.variant }} @ Speeduino ${{ needs.plan.outputs.speeduino_tag }}"
+            echo '```'
+            python3 -c 'import json; d=json.load(open("build-info.json")); [print("%s: %s" % (k, d[k])) for k in ("speeduino_commit","firmware_signature","ini_signature","ststm32_version","platformio_version","arm_gcc_version","flash_used_bytes","flash_used_pct","ram_used_bytes","ram_used_pct","build_date")]'
+            cat SHA256SUMS
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          path: out/${{ matrix.variant }}
+          if-no-files-found: error
+
+  release:
+    name: Release speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+    needs: [plan, build]
+    if: needs.plan.outputs.publish == 'true' && needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          path: out
+      - name: Verify checksums
+        working-directory: out
+        run: sha256sum -c SHA256SUMS
+      - name: Publish GitHub Release (only if missing; an existing release is never modified)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          SPEEDUINO_TAG: ${{ needs.plan.outputs.speeduino_tag }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $TAG already exists - not modified"
+            echo "release \`$TAG\` already exists - not modified" >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          python3 - <<'PYEOF' > notes.md
+          import json
+          d = json.load(open("out/build-info.json"))
+          print("Speeduino `%s` (%s) for OPF `%s`, built by speeduino-autobuild.yml from OPF_ECU `%s`." % (
+              d["speeduino_tag"], d["speeduino_commit"][:10], d["board"], d["opf_ecu_commit"][:10]))
+          print()
+          print("- firmware signature / ini signature: `%s` / `%s`" % (d["firmware_signature"], d["ini_signature"]))
+          print("- flash %d / %d bytes (%s%%), RAM %d / %d bytes (%s%%)" % (d["flash_used_bytes"], d["flash_total_bytes"], d["flash_used_pct"], d["ram_used_bytes"], d["ram_total_bytes"], d["ram_used_pct"]))
+          print("- toolchain: PlatformIO %s, ststm32 %s, arm-gcc %s" % (d["platformio_version"], d["ststm32_version"], d["arm_gcc_version"]))
+          print("- base tune: %d constants (%d from seed tune, %d ini defaults, %d fallbacks)" % (
+              d["base_tune"]["constants"], d["base_tune"]["from_seed"], d["base_tune"]["from_ini_default"], d["base_tune"]["fallback"]))
+          print()
+          print("Flash `speeduino_firmware.bin` via STM32 DFU (0483:df11). Load `speeduino_tunerstudio.ini` in TunerStudio; `base-map.msq` is a starting tune only.")
+          print()
+          print("```"); print(open("out/SHA256SUMS").read().strip()); print("```")
+          PYEOF
+          files=(out/speeduino_firmware.bin out/speeduino_tunerstudio.ini out/base-map.msq out/SHA256SUMS out/build-info.json)
+          for f in out/speeduino_firmware.hex out/speeduino_firmware.elf out/opf-*.patch; do [ -f "$f" ] && files+=("$f"); done
+          gh release create "$TAG" --latest=false -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Speeduino $SPEEDUINO_TAG - $VARIANT" --notes-file notes.md "${files[@]}"
+
+  firmware-branch:
+    # Commit the firmware files to the variant's board branch (e.g. core48_21:speeduino/) and regenerate the
+    # readme SPEEDUINO section. dry_run: everything up to the guard runs, the planned change is printed, no commit.
+    name: Board branch ${{ matrix.variant }}
+    needs: [plan, build, release]
+    if: always() && needs.plan.outputs.any == 'true' && needs.build.result == 'success' && (needs.plan.outputs.publish != 'true' || needs.release.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/speeduino
+          path: src
+      - id: map
+        run: |
+          set -euo pipefail
+          bj="src/scripts/speeduino/board-overlay/${{ matrix.variant }}/board.json"
+          br=$(jq -r '.firmware_branch // empty' "$bj")
+          dir=$(jq -r '.firmware_dir // "speeduino"' "$bj")
+          readme=$(jq -r '.firmware_readme // empty' "$bj")
+          [[ -z "$br" || "$br" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "::error::bad firmware_branch '$br'"; exit 1; }
+          [[ "$dir" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::bad firmware_dir '$dir'"; exit 1; }
+          [[ -z "$readme" || "$readme" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::bad firmware_readme '$readme' (top-level file only)"; exit 1; }
+          echo "branch=$br" >> "$GITHUB_OUTPUT"; echo "dir=$dir" >> "$GITHUB_OUTPUT"; echo "readme=$readme" >> "$GITHUB_OUTPUT"
+          [ -n "$br" ] || echo "no firmware_branch for ${{ matrix.variant }} - nothing to push"
+      - uses: actions/download-artifact@v4
+        if: steps.map.outputs.branch != ''
+        with:
+          name: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          path: out
+      - uses: actions/checkout@v4
+        if: steps.map.outputs.branch != ''
+        with:
+          ref: ${{ steps.map.outputs.branch }}
+          path: fw
+          fetch-depth: 50
+      - name: ${{ needs.plan.outputs.publish == 'true' && 'Commit' || 'Dry run (plan only)' }} ${{ steps.map.outputs.branch }}:${{ steps.map.outputs.dir }}/ + readme SPEEDUINO section
+        if: steps.map.outputs.branch != ''
+        env:
+          BRANCH: ${{ steps.map.outputs.branch }}
+          DIR: ${{ steps.map.outputs.dir }}
+          README: ${{ steps.map.outputs.readme }}
+          GH_TOKEN: ${{ github.token }}
+          VARIANT: ${{ matrix.variant }}
+          SPEEDUINO_TAG: ${{ needs.plan.outputs.speeduino_tag }}
+          RELEASE_TAG: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          PUBLISH: ${{ needs.plan.outputs.publish }}
+        run: |
+          set -euo pipefail
+          (cd out && sha256sum -c SHA256SUMS)
+          FILES="speeduino_firmware.bin speeduino_firmware.hex speeduino_tunerstudio.ini base-map.msq"
+          TOOL="$GITHUB_WORKSPACE/src/scripts/speeduino/readme_section.py"
+          cd fw
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Guard: between $1 and $2 (or the index when $2 is empty) only $DIR/ may change, plus $README
+          # when the readme is identical to the old one once the SPEEDUINO section is stripped from both.
+          guard() {
+            local names n bad="" tmp
+            if [ -n "${2:-}" ]; then names=$(git diff --name-only "$1" "$2"); else names=$(git diff --cached --name-only "$1"); fi
+            while IFS= read -r n; do
+              [ -n "$n" ] || continue
+              case "$n" in
+                "$DIR"/*) ;;
+                *)
+                  if [ -n "$README" ] && [ "$n" = "$README" ]; then
+                    tmp=$(mktemp -d)
+                    git show "$1:$README" > "$tmp/old"
+                    if [ -n "${2:-}" ]; then git show "$2:$README" > "$tmp/new"; else git show ":$README" > "$tmp/new"; fi
+                    python3 "$TOOL" check "$tmp/old" "$tmp/new" || bad="$bad $n(outside-SPEEDUINO-section)"
+                    rm -rf "$tmp"
+                  else
+                    bad="$bad $n"
+                  fi ;;
+              esac
+            done <<< "$names"
+            if [ -n "$bad" ]; then echo "::error::refusing to modify files outside $DIR/ (or $README outside its SPEEDUINO section):$bad"; exit 1; fi
+          }
+
+          mkdir -p "$DIR"
+          for f in $FILES; do [ -f "../out/$f" ] && cp "../out/$f" "$DIR/$f"; done
+          git add -- $(for f in $FILES; do [ -f "$DIR/$f" ] && echo "$DIR/$f"; done)
+          fw_changed=true; git diff --cached --quiet && fw_changed=false
+          # build-info.json + checksums describe the files in this folder: rewritten when the firmware changed
+          # (or when the folder's build-info predates the build_date field, so the readme can show it)
+          if [ "$fw_changed" = true ] || ! jq -e '.build_date' "$DIR/build-info.json" >/dev/null 2>&1; then
+            cp ../out/build-info.json "$DIR/build-info.json"
+            (cd "$DIR" && sha256sum $(for f in $FILES; do [ -f "$f" ] && echo "$f"; done) > SHA256SUMS && sha256sum -c --quiet SHA256SUMS)
+            git add -- "$DIR/build-info.json" "$DIR/SHA256SUMS"
+          fi
+          if [ -n "$README" ]; then
+            [ -f "$README" ] || { echo "::error::$BRANCH has no $README"; exit 1; }
+            [ "$PUBLISH" != true ] || gh release view "$RELEASE_TAG" -R "$GITHUB_REPOSITORY" >/dev/null || { echo "::error::release $RELEASE_TAG not found"; exit 1; }
+            python3 "$TOOL" update "$README" --dir "$DIR" --branch "$BRANCH" --repo "$GITHUB_REPOSITORY" \
+              --server "$GITHUB_SERVER_URL" --release-tag "$RELEASE_TAG" | tee ../readme-update.log
+            git add -- "$README"
+          fi
+          if git diff --cached --quiet; then
+            echo "firmware files and readme section in $BRANCH are unchanged - nothing to commit"
+            echo "### \`$BRANCH:$DIR/\` and the readme SPEEDUINO section are already up to date - no commit" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          guard HEAD
+          [ -z "$(git status --porcelain --untracked-files=all | grep -v -e " $DIR/" -e " ${README:-/dev/null}\$" || true)" ] || { echo "::error::work tree has changes outside $DIR/"; git status --short; exit 1; }
+          # every file linked from the section must be in the commit
+          for l in $(sed -n 's|^link: https://raw.githubusercontent.com/[^/]*/[^/]*/[^/]*/||p' ../readme-update.log 2>/dev/null); do
+            git cat-file -e ":$l" || { echo "::error::readme links $l, which is not in the commit"; exit 1; }
+          done
+          git diff --cached --stat
+          if [ "$PUBLISH" != true ]; then
+            echo "dry run: planned commit to $BRANCH (not committed, not pushed):"
+            git diff --cached -- "${README:-/dev/null}" | tr -d '\r' || true
+            { echo "### Dry run: planned change on \`$BRANCH\` (not committed)"; echo '```'; git diff --cached --stat; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          what="Speeduino $SPEEDUINO_TAG for $VARIANT"; [ "$fw_changed" = true ] || what="Speeduino $SPEEDUINO_TAG for $VARIANT: readme section"
+          git commit -q -m "$what" \
+            -m "Built by speeduino-autobuild.yml from OPF_ECU ${GITHUB_SHA::10} (run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID). Only $DIR/ and the SPEEDUINO section of ${README:-<no readme>} are modified."
+
+          pushed=false
+          for attempt in 1 2 3 4 5; do
+            if git push origin "HEAD:refs/heads/$BRANCH"; then pushed=true; break; fi
+            echo "push rejected (attempt $attempt) - fetching $BRANCH and rebasing"
+            sleep $((attempt * 5))
+            git fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH" || { git rebase --abort || true; echo "::error::rebase onto origin/$BRANCH failed"; exit 1; }
+            guard "origin/$BRANCH" HEAD
+          done
+          [ "$pushed" = true ] || { echo "::error::could not push to $BRANCH after 5 attempts"; exit 1; }
+          git fetch -q origin "$BRANCH"
+          guard "HEAD~1" HEAD
+          [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$BRANCH")" ] || echo "::warning::$BRANCH moved after our push"
+          {
+            echo "### Firmware pushed to \`$BRANCH:$DIR/\`"
+            echo "commit $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$(git rev-parse HEAD)"
+            echo '```'; git show --stat --format='%h %s' HEAD; cat ../readme-update.log 2>/dev/null || true; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
