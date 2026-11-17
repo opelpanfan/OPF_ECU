@@ -45,15 +45,9 @@ OUT=${OUT:-$WORK/out/$VARIANT}
 TOOLCHAIN_CACHE=${TOOLCHAIN_CACHE:-$WORK/toolchain}
 FOME="$WORK/fome"; FW="$FOME/firmware"
 
-# FOME board folder the variant overlays (core48_21 -> core48, core8_24c -> core8, opf33 -> opf33).
-# OPF33 is not an upstream FOME board; the overlay supplies compile_opf33.sh and board.h.
+# FOME board folder is inferred from the overlay's board.mk after OVERLAY is resolved
+# (core48_21/royalEFI/core8_24c -> core48, core8_21 -> core8, opf33 -> opf33).
 REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd -P)
-case "$VARIANT" in
-  core48*) FOME_BOARD=core48;;
-  core8*) FOME_BOARD=core8;;
-  opf33*) FOME_BOARD=opf33;;
-  *) FOME_BOARD=${FOME_BOARD:?set FOME_BOARD for variant $VARIANT};;
-esac
 # ---- resolve FOME ref --------------------------------------------------------------------------
 TOKEN=${GITHUB_TOKEN:-${GH_TOKEN:-}}
 if [ -z "$FOME_REF" ]; then
@@ -76,6 +70,24 @@ elif [ -d "$BOARDS_DIR/$VARIANT" ]; then
 else
   die "board config for $VARIANT not found in config/ or $BOARDS_DIR"
 fi
+
+
+# Which upstream (or overlay-provided) FOME board directory this variant is compiled as.
+infer_fome_board() {
+  local mk=$1
+  [ -f "$mk" ] || return 1
+  if grep -qE 'SHORT_BOARD_NAME[[:space:]]*=[[:space:]]*opf33|config/boards/opf33' "$mk"; then echo opf33; return; fi
+  if grep -qE 'config/boards/core48|SHORT_BOARD_NAME=core48' "$mk"; then echo core48; return; fi
+  if grep -qE 'config/boards/core8|SHORT_BOARD_NAME=core8|-DSHORT_BOARD_NAME=core8' "$mk"; then echo core8; return; fi
+  return 1
+}
+FOME_BOARD=$(infer_fome_board "$OVERLAY/board.mk" || true)
+case "$VARIANT" in
+  opf33*) FOME_BOARD=${FOME_BOARD:-opf33};;
+  core48*|royalEFI*) FOME_BOARD=${FOME_BOARD:-core48};;
+  core8*) FOME_BOARD=${FOME_BOARD:-core8};;
+esac
+[ -n "${FOME_BOARD:-}" ] || die "set FOME_BOARD for variant $VARIANT (could not infer from $OVERLAY/board.mk)"
 
 export PATH="$PATH:/usr/sbin:/sbin"   # mkfs.fat lives in sbin on Debian/Ubuntu
 for t in git curl python3 java make xxd strings sha256sum zip gzip mcopy mkfs.fat; do

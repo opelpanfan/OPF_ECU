@@ -11,10 +11,39 @@ import re
 import sys
 
 
-def fix(src: str) -> str:
-    if "setup_custom_board_overrides" in src:
-        return src
+LED_FUNCS = {
+    "communicationLedPin": "getCommsLedPin",
+    "runningLedPin": "getRunningLedPin",
+    "warningLedPin": "getWarningLedPin",
+}
+
+def convert_leds(src: str) -> str:
+    """Current rusEFI/FOME expose status LEDs via get*LedPin(), not engineConfiguration fields."""
     out = src
+    funcs = []
+    for field, fn in LED_FUNCS.items():
+        m = re.search(r"engineConfiguration->%s\s*=\s*(Gpio::\w+)\s*;" % field, out)
+        if not m:
+            continue
+        pin = m.group(1)
+        out = re.sub(r"\s*engineConfiguration->%s\s*=\s*Gpio::\w+\s*;" % field, "", out)
+        if re.search(r"\bGpio\s+%s\s*\(" % fn, out) is None:
+            funcs.append("Gpio %s() {\n\treturn %s;\n}\n" % (fn, pin))
+    if funcs:
+        out = out.rstrip() + "\n\n// LED pins: engineConfiguration fields removed upstream\n" + "\n".join(funcs)
+    return out
+
+def fix_vbatt(src: str) -> str:
+    """Host gcc in the simulator is built without -fsingle-precision-constant."""
+    return src.replace(
+        "engineConfiguration->vbattDividerCoeff = (6.34 + 1) / 1",
+        "engineConfiguration->vbattDividerCoeff = 7.34f",
+    )
+
+def fix(src: str) -> str:
+    out = fix_vbatt(convert_leds(src))
+    if "setup_custom_board_overrides" in out:
+        return out
     hooks = []
     if re.search(r"^void\s+setBoardConfigOverrides\s*\(\s*(void)?\s*\)", out, re.M):
         out = re.sub(r"^void\s+setBoardConfigOverrides\s*\(\s*(void)?\s*\)",

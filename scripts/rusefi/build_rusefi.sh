@@ -277,6 +277,11 @@ if compgen -G "$BD/connectors/*.yaml" >/dev/null; then
 fi
 # board-API adaptation (setup_custom_board_overrides(), setLuaScript(), includes);
 # no-op for the already-ported board-overlay sources, needed for raw ECU_Build sources
+# compile.sh requires board.env (some older config/ folders only set SHORT_BOARD_NAME in board.mk).
+if [ ! -f "$BD/board.env" ]; then
+  printf 'SHORT_BOARD_NAME=%s\nPROJECT_CPU=ARCH_STM32F4\n' "$SHORT_BOARD_NAME" > "$BD/board.env"
+  echo "wrote default $BD/board.env"
+fi
 python3 "$SCRIPT_DIR/rusefi_board_fixups.py" "$BD/board_configuration.cpp"
 
 # ---- build -------------------------------------------------------------------

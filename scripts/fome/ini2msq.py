@@ -182,10 +182,29 @@ def main():
         open(a.msq, 'w', encoding='latin-1').write(to_msq(sig, page_size, consts, data, a.comment))
         print('wrote %s: %d constants, signature "%s"' % (a.msq, len(consts), sig)); return
     buf, cov = encode_back(consts, open(a.msq, encoding='latin-1').read(), page_size)
+    # C-string fields are NUL-terminated; TS and decode() ignore trailing bytes after the first NUL,
+    # so leftover simulator RAM in the padding must not fail the build.
+    for c in consts:
+        if c['kind'] != 'string':
+            continue
+        off, length = c['off'], c['length']
+        nul = data[off:off + length].find(b'\0')
+        if nul == -1:
+            continue
+        cov = bytearray(cov)
+        cov[off + nul + 1:off + length] = b'\0' * (length - nul - 1)
+        cov = bytes(cov)
+    def field_size(c):
+        if c['kind'] == 'string':
+            return c['length']
+        if c['kind'] == 'bits':
+            return struct.calcsize(TYPES[c['type']])
+        n = 1 if c['kind'] == 'scalar' else c['rows'] * c['cols']
+        return n * struct.calcsize(TYPES[c['type']])
     bad = [i for i in range(page_size) if cov[i] and (buf[i] & cov[i]) != (data[i] & cov[i])]
     pct = 100.0 * sum(1 for x in cov if x) / page_size
     if bad:
-        names = sorted({c['name'] for c in consts for i in bad[:50] if c['off'] <= i < c['off'] + 64})[:10]
+        names = sorted({c['name'] for c in consts if c['off'] <= bad[0] < c['off'] + field_size(c)})[:10]
         sys.exit('VERIFY FAILED: %d byte(s) differ, first at offset %d (near %s)' % (len(bad), bad[0], names))
     print('verify OK: msq re-encodes to identical bytes for all defined fields (%.1f%% of page covered)' % pct)
 

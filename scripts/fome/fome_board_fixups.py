@@ -14,6 +14,45 @@ applied = []
 def field_exists(name):
     return re.search(r'\b%s\b' % re.escape(name), cfg_txt) is not None
 
+def fome_has_rusefi_hooks():
+    return (fw / 'hw_layer' / 'board_overrides.h').exists()
+
+def convert_lua_to_fome(s):
+    """Current FOME still stores the default script in config->luaScript (no setLuaScript())."""
+    if 'setLuaScript' not in s:
+        return s
+    s2, n = re.subn(
+        r'setLuaScript\s*\(\s*(R"\([\s\S]*?\)")\s*\)',
+        r'strncpy(config->luaScript, \1, efi::size(config->luaScript))',
+        s,
+    )
+    return s2 if n else s
+
+def convert_rusefi_hooks_to_fome(s):
+    """Inverse of rusefi_board_fixups.py when this FOME still uses weak setBoard* hooks."""
+    s = s.replace('#include "board_overrides.h"\n', '')
+    s = convert_lua_to_fome(s)
+    m = re.search(r'void\s+setup_custom_board_overrides\s*\(\s*\)\s*\{([\s\S]*?)\n\}', s)
+    if not m:
+        return s
+    body = m.group(1)
+    md = re.search(r'custom_board_DefaultConfiguration\s*=\s*(\w+)', body)
+    mo = re.search(r'custom_board_ConfigOverrides\s*=\s*(\w+)', body)
+    if md:
+        s = re.sub(
+            r'(?:static\s+)?void\s+' + md.group(1) + r'\s*\(\s*\)',
+            'void setBoardDefaultConfiguration()',
+            s, count=1)
+    if mo:
+        s = re.sub(
+            r'(?:static\s+)?void\s+' + mo.group(1) + r'\s*\(\s*\)',
+            'void setBoardConfigOverrides()',
+            s, count=1)
+    s = re.sub(
+        r'\n?(?://[^\n]*setup_custom_board_overrides[^\n]*\n)?void\s+setup_custom_board_overrides\s*\(\s*\)\s*\{[\s\S]*?\n\}\n?',
+        '\n', s, count=1)
+    return s
+
 # FOME #730 (2026-02): all UART / bluetooth / serial-console code removed.
 if not field_exists('binarySerialTxPin'):
     h = board / 'board.h'
@@ -32,6 +71,32 @@ for f in ['binarySerialTxPin', 'binarySerialRxPin', 'tunerStudioSerialSpeed', 'u
         s2 = re.sub(r'\s*engineConfiguration->%s\s*=[^;]*;' % f, '', s)
         if s2 != s:
             applied.append('board_configuration.cpp: removed engineConfiguration->%s (field gone upstream)' % f)
+        s = s2
+
+# Status LEDs: current FOME uses get*LedPin() (same as rusEFI), not engineConfiguration fields.
+LED_FUNCS = {
+    'communicationLedPin': 'getCommsLedPin',
+    'runningLedPin': 'getRunningLedPin',
+    'warningLedPin': 'getWarningLedPin',
+}
+funcs = []
+for field, fn in LED_FUNCS.items():
+    if field_exists(field):
+        continue
+    m = re.search(r'engineConfiguration->%s\s*=\s*(Gpio::\w+)\s*;' % field, s)
+    if not m:
+        continue
+    pin = m.group(1)
+    s = re.sub(r'\s*engineConfiguration->%s\s*=\s*Gpio::\w+\s*;' % field, '', s)
+    if re.search(r'\bGpio\s+%s\s*\(' % fn, s) is None:
+        funcs.append('Gpio %s() {\n\treturn %s;\n}\n' % (fn, pin))
+    applied.append('board_configuration.cpp: %s -> %s()' % (field, fn))
+if funcs:
+    s = s.rstrip() + '\n\n// LED pins: engineConfiguration fields removed upstream\n' + '\n'.join(funcs)
+if not fome_has_rusefi_hooks():
+    s2 = convert_rusefi_hooks_to_fome(s)
+    if s2 != s:
+        applied.append('board_configuration.cpp: rusEFI setup_custom_board_overrides/setLuaScript -> FOME setBoard* hooks')
         s = s2
 c.write_text(s)
 
