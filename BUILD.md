@@ -43,7 +43,7 @@ when `dry_run=false`. Push validation never publishes.
 ## Local build
 
 ```sh
-scripts/rusefi/build_rusefi_core48.sh --ref df128dec524d820bb767bcc503d8561ef01e258c --variant opf33
+scripts/rusefi/build_rusefi.sh --ref df128dec524d820bb767bcc503d8561ef01e258c --variant opf33
 scripts/fome/build_fome.sh --ref 3b772a890ae0703793b14f08822c20f34b386b8c --variant opf33
 scripts/speeduino/build_speeduino.sh --ref 202501.7 --variant opf33
 python3 tools/boardgen/generate_board.py config/opf33/board.yaml --docs-dir docs
@@ -63,3 +63,16 @@ board. Teensy boards are not built.
 
 Every `.sh` file was checked against `.github/workflows` and `scripts/` before
 any deletion. All current scripts are referenced; none were removed.
+
+
+## CI workflows
+
+All three workflows live on `master-grok` and share the same naming:
+
+| Workflow | File | Release tag | Assets |
+| --- | --- | --- | --- |
+| rusEFI autobuild | `.github/workflows/rusefi-autobuild.yml` | `rusefi-<ref>-<variant>` | `<tag>.bin`, `<tag>.ini`, `<tag>-base.msq`, `<tag>-manual.md`, ... |
+| FOME autobuild | `.github/workflows/fome-autobuild.yml` | `fome-<ref>-<variant>` | same prefix (`<tag>.update.srec` / `<tag>.bl.srec` for OpenBLT) |
+| Speeduino autobuild | `.github/workflows/speeduino-autobuild.yml` | `speeduino-<ref>-<variant>` | same prefix |
+
+The board matrix is generated from `config/<board>/` by `scripts/ci/list_boards.py`. A new board folder is picked up with no workflow edit. Every unique board is built for all three firmwares. `config/opf33_fome/` is the FOME overlay for OPF33, not a separate board (logged as a skip in the job summary). Teensy is not built.

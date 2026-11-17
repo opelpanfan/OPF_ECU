@@ -3,7 +3,7 @@ name: Speeduino autobuild
 # Auto-build Speeduino firmware (+ TunerStudio ini, base tune) for OPF boards whenever speeduino/speeduino
 # publishes a new release, publish it as GitHub Release speeduino-<tag>-<variant> and commit it to the board
 # branch (<variant>, e.g. core48_21) under speeduino/. Same layout as the rusEFI / FOME workflows
-# (rusefi-core48-autobuild.yml, fome-autobuild.yml). Build logic lives in scripts/speeduino/build_speeduino.sh;
+# (rusefi-autobuild.yml, fome-autobuild.yml). Build logic lives in scripts/speeduino/build_speeduino.sh;
 # CI calls it with the same arguments as a local build. Publishing is never done by hand.
 #
 # Triggers:
@@ -48,6 +48,7 @@ on:
     branches: [master-grok]
     paths:
       - 'scripts/speeduino/**'
+      - 'scripts/ci/**'
       - 'config/**'
       - '.github/workflows/speeduino-autobuild.yml'
 
@@ -76,7 +77,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: scripts/speeduino
+          sparse-checkout: |
+            scripts/speeduino
+            scripts/ci
+            config
       - id: plan
         env:
           GH_TOKEN: ${{ github.token }}
@@ -99,11 +103,10 @@ jobs:
             workflow_dispatch) [ "$IN_DRY_RUN" = false ] && publish=true ;;
           esac
 
-          all=$(cd scripts/speeduino/board-overlay && for f in */board.json; do
-            v="${f%%/*}"
-            case "$v" in *teensy*|*Teensy*|*TEENSY*) echo "skipping Teensy overlay $v" >&2; continue ;; esac
-            printf '%s ' "$v"
-          done)
+          python3 scripts/ci/list_boards.py --json > /tmp/boards.json
+          python3 -c "import json; d=json.load(open('/tmp/boards.json'));\nprint('### Skipped config folders') if d['skipped'] else None;\n[print('- `%s`: %s' % (s['name'], s['reason'])) for s in d['skipped']]" >> "$GITHUB_STEP_SUMMARY"
+          mapfile -t all_boards < <(python3 scripts/ci/list_boards.py)
+          all="${all_boards[*]}"
           if [ "$EVENT" = workflow_dispatch ]; then
             variants="${IN_VARIANT:-all}"; [ "$variants" = all ] && variants="$all"
           else
@@ -111,9 +114,10 @@ jobs:
           fi
           todo=()
           for v in ${variants//,/ }; do
-            case "$v" in *teensy*|*Teensy*|*TEENSY*) echo "::warning::skipping Teensy variant $v"; continue ;; esac
             bj="scripts/speeduino/board-overlay/$v/board.json"
-            [ -f "$bj" ] || { echo "::error::unknown variant $v (no $bj)"; exit 1; }
+            if [ ! -f "$bj" ]; then
+              echo "::error::$v: missing $bj — port the Speeduino overlay from config/$v"
+            fi
             rtag="speeduino-$tag-$v"
             if gh release view "$rtag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then rel=true; else rel=false; fi
             # what the board branch carries: <dir>/build-info.json tag + a current readme SPEEDUINO section
@@ -266,14 +270,17 @@ jobs:
           print("- base tune: %d constants (%d from seed tune, %d ini defaults, %d fallbacks)" % (
               d["base_tune"]["constants"], d["base_tune"]["from_seed"], d["base_tune"]["from_ini_default"], d["base_tune"]["fallback"]))
           print()
-          print("Flash `speeduino_firmware.bin` via STM32 DFU (0483:df11). Load `speeduino_tunerstudio.ini` in TunerStudio; `base-map.msq` is a starting tune only.")
+          print("Release assets share this tag prefix (`%s.bin`, `%s.hex`, `%s.ini`, `%s-base.msq`)." % (tag, tag, tag, tag))
+          print("Flash the `.bin` via STM32 DFU (0483:df11). Load the `.ini` in TunerStudio; the `-base.msq` is a starting tune only.")
           print()
-          print("```"); print(open("out/SHA256SUMS").read().strip()); print("```")
           PYEOF
-          files=(out/speeduino_firmware.bin out/speeduino_tunerstudio.ini out/base-map.msq out/SHA256SUMS out/build-info.json)
-          for f in out/speeduino_firmware.hex out/speeduino_firmware.elf out/opf-*.patch; do [ -f "$f" ] && files+=("$f"); done
+          STAGE="$RUNNER_TEMP/release-assets"
+          scripts/ci/stage_release_assets.sh "$TAG" out "$STAGE"
+          echo '```' >> notes.md
+          cat "$STAGE/SHA256SUMS" >> notes.md
+          echo '```' >> notes.md
           gh release create "$TAG" --latest=false -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Speeduino $SPEEDUINO_TAG - $VARIANT" --notes-file notes.md "${files[@]}"
+            --title "Speeduino $SPEEDUINO_TAG - $VARIANT" --notes-file notes.md "$STAGE"/*
 
   firmware-branch:
     # Commit the firmware files to the variant's board branch (e.g. core48_21:speeduino/) and regenerate the
@@ -292,7 +299,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: scripts/speeduino
+          sparse-checkout: |
+            scripts/speeduino
+            scripts/ci
+            config
           path: src
       - id: map
         run: |

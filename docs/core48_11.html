@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
+<title>core48_11 — OPF pinout and firmware</title>
+<style>body{font-family:sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:.4rem .6rem;text-align:left}
+code{background:#f5f5f5;padding:0 .2rem}</style></head><body>
+<p><a href='index.html'>All boards</a></p>
+<h1>core48_11</h1>
+<p>STM32F407 OPF board. rusEFI, FOME and Speeduino are all first-class firmwares for this hardware.</p>
+<h2>Firmware</h2>
+<table><thead><tr><th>Firmware</th><th>Pinned ref</th><th>Release tag</th><th>Board-branch artifacts</th></tr></thead><tbody>
+<tr><td>rusEFI</td><td><code>df128dec524d820bb767bcc503d8561ef01e258c</code></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core48_11'><code>rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core48_11</code></a></td>
+<td><a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/rusefi/rusefi_firmware.bin'>bin</a>, <a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/rusefi/rusefi_tunerstudio.ini'>ini</a></td></tr>
+<tr><td>FOME</td><td><code>3b772a890ae0703793b14f08822c20f34b386b8c</code></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core48_11'><code>fome-3b772a890ae0703793b14f08822c20f34b386b8c-core48_11</code></a></td>
+<td><a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/fome/fome.bin'>bin</a>, <a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/fome/fome_tunerstudio.ini'>ini</a> — first install via DFU, later updates via OpenBLT <code>.update.srec</code></td></tr>
+<tr><td>Speeduino</td><td><code>202501.7</code></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core48_11'><code>speeduino-202501.7-core48_11</code></a></td>
+<td><a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/speeduino/speeduino_firmware.bin'>bin</a>, <a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/speeduino/speeduino_tunerstudio.ini'>ini</a></td></tr>
+</tbody></table>
+<p>Release assets use the tag as a filename prefix (<code>&lt;tag&gt;.bin</code>, <code>&lt;tag&gt;.ini</code>, <code>&lt;tag&gt;-base.msq</code>). A tag link 404s until that board has been published. Load the matching TunerStudio ini from the same release. Some boards do not yet have a dedicated board branch; artifacts then exist only on the GitHub Release.</p>
+<h2>Speeduino pin map</h2>
+<p>From <code>scripts/speeduino/board-overlay/core48_11/board.json</code>, ported from this board's config so it matches rusEFI/FOME.</p>
+<table><thead><tr><th>Function</th><th>Pin</th></tr></thead><tbody>
+<tr><td><code>pinBat</code></td><td><code>PA0</code></td></tr>
+<tr><td><code>pinBoost</code></td><td><code>PG5</code></td></tr>
+<tr><td><code>pinCLT</code></td><td><code>PA2</code></td></tr>
+<tr><td><code>pinCoil1</code></td><td><code>PG1</code></td></tr>
+<tr><td><code>pinCoil2</code></td><td><code>PG0</code></td></tr>
+<tr><td><code>pinCoil3</code></td><td><code>PF15</code></td></tr>
+<tr><td><code>pinCoil4</code></td><td><code>PE11</code></td></tr>
+<tr><td><code>pinCoil5</code></td><td><code>PE12</code></td></tr>
+<tr><td><code>pinCoil6</code></td><td><code>PE13</code></td></tr>
+<tr><td><code>pinCoil7</code></td><td><code>PE14</code></td></tr>
+<tr><td><code>pinCoil8</code></td><td><code>PE15</code></td></tr>
+<tr><td><code>pinFan</code></td><td><code>PG4</code></td></tr>
+<tr><td><code>pinFuelPressure</code></td><td><code>PA5</code></td></tr>
+<tr><td><code>pinFuelPump</code></td><td><code>PG3</code></td></tr>
+<tr><td><code>pinIAT</code></td><td><code>PA3</code></td></tr>
+<tr><td><code>pinIdle1</code></td><td><code>PG6</code></td></tr>
+<tr><td><code>pinInjector1</code></td><td><code>PF13</code></td></tr>
+<tr><td><code>pinInjector2</code></td><td><code>PF14</code></td></tr>
+<tr><td><code>pinInjector3</code></td><td><code>PD8</code></td></tr>
+<tr><td><code>pinInjector4</code></td><td><code>PD9</code></td></tr>
+<tr><td><code>pinInjector5</code></td><td><code>PD10</code></td></tr>
+<tr><td><code>pinInjector6</code></td><td><code>PD11</code></td></tr>
+<tr><td><code>pinInjector7</code></td><td><code>PD12</code></td></tr>
+<tr><td><code>pinInjector8</code></td><td><code>PD13</code></td></tr>
+<tr><td><code>pinMAP</code></td><td><code>PB0</code></td></tr>
+<tr><td><code>pinO2</code></td><td><code>PC1</code></td></tr>
+<tr><td><code>pinOilPressure</code></td><td><code>PA4</code></td></tr>
+<tr><td><code>pinSpareTemp1</code></td><td><code>PA7</code></td></tr>
+<tr><td><code>pinTPS</code></td><td><code>PA1</code></td></tr>
+<tr><td><code>pinTachOut</code></td><td><code>PD14</code></td></tr>
+<tr><td><code>pinTrigger</code></td><td><code>PE2</code></td></tr>
+<tr><td><code>pinTrigger2</code></td><td><code>PE3</code></td></tr>
+<tr><td><code>pinVVT_1</code></td><td><code>PG7</code></td></tr>
+</tbody></table>
+</body></html>

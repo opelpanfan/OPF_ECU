@@ -1,6 +1,12 @@
-# Auto-build rusEFI firmware for the OPF core48 board whenever rusefi/rusefi publishes a new release.
-# Build logic lives in scripts/rusefi/build_rusefi_core48.sh (same script for local builds).
-name: rusEFI auto-build
+# Auto-build rusEFI firmware for every STM32F407 OPF board in config/.
+# Build logic lives in scripts/rusefi/build_rusefi.sh (same script for local builds).
+# Release tag: rusefi-<ref>-<variant>. Release assets use the same prefix
+# (rusefi-<ref>-<variant>.bin, .ini, -base.msq, -manual.md, .build-info.txt, ...).
+# Board-branch copies under rusefi/ keep the short names (rusefi_firmware.bin, ...).
+# Push to master-grok is validation only. Publishing is workflow_dispatch dry_run=false
+# or a scheduled run on the default branch when the release does not already exist.
+# Never overwrites an existing release. Never steals the repo-wide Latest badge.
+name: rusEFI autobuild
 
 on:
   schedule:
@@ -12,9 +18,9 @@ on:
         required: false
         default: df128dec524d820bb767bcc503d8561ef01e258c
       variant:
-        description: "Board variant (config/<variant>/)"
+        description: 'Board variant (config/<variant>/), comma list, or "all" (STM32F407 only; no Teensy, no opf33_fome)'
         required: false
-        default: opf33
+        default: all
       dry_run:
         description: "Build + upload artifacts only: no GitHub release, no commit to the board branch (planned diff is printed)"
         type: boolean
@@ -29,14 +35,15 @@ on:
     branches: [master-grok]
     paths:
       - "scripts/rusefi/**"
+      - "scripts/ci/**"
       - "config/**"
-      - ".github/workflows/rusefi-core48-autobuild.yml"
+      - ".github/workflows/rusefi-autobuild.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: rusefi-${{ github.ref }}-${{ github.event.inputs.variant || 'opf33' }}
+  group: rusefi-${{ github.ref }}-${{ github.event.inputs.variant || 'all' }}
   cancel-in-progress: false
 
 env:
@@ -44,14 +51,13 @@ env:
   TOOLCHAIN_KEY: arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi-62a63b98
 
 jobs:
-  check:
+  plan:
     name: Resolve rusEFI ref / compare with last build
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.r.outputs.ref }}
-      variant: ${{ steps.r.outputs.variant }}
-      tag: ${{ steps.r.outputs.tag }}
-      build: ${{ steps.r.outputs.build }}
+      matrix: ${{ steps.r.outputs.matrix }}
+      any: ${{ steps.r.outputs.any }}
       publish: ${{ steps.r.outputs.publish }}
       prerelease: ${{ steps.r.outputs.prerelease }}
     steps:
@@ -59,6 +65,7 @@ jobs:
         with:
           sparse-checkout: |
             scripts/rusefi
+            scripts/ci
             config
       - id: r
         env:
@@ -69,54 +76,78 @@ jobs:
           IN_VARIANT: ${{ github.event.inputs.variant }}
           IN_DRY_RUN: ${{ github.event.inputs.dry_run }}
           IN_FORCE: ${{ github.event.inputs.force }}
-          TRACK: ${{ vars.RUSEFI_TRACK }}          # optional repo variable: "stable" (default) or "nightly"
-          VAR_VARIANT: ${{ vars.RUSEFI_VARIANT }}  # optional repo variable, default core48_21
+          TRACK: ${{ vars.RUSEFI_TRACK }}
         run: |
           set -euo pipefail
-          variant="${IN_VARIANT:-${VAR_VARIANT:-opf33}}"
-          # Known-good pin used by the ECU_Build OPF33 port. Override with "latest" when ready.
           DEFAULT_REF="df128dec524d820bb767bcc503d8561ef01e258c"
           ref="${IN_REF:-$DEFAULT_REF}"
           if [ "$EVENT" = schedule ] && [ "${TRACK:-stable}" = nightly ]; then ref=latest-nightly; fi
-          ref=$(scripts/rusefi/build_rusefi_core48.sh --resolve-only --ref "$ref")
+          ref=$(scripts/rusefi/build_rusefi.sh --resolve-only --ref "$ref")
           safe=$(printf '%s' "$ref" | tr -c 'A-Za-z0-9._-' '-')
-          tag="rusefi-${safe}-${variant}"
-          if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then exists=true; else exists=false; fi
+
+          publish=false
+          case "$EVENT" in
+            schedule) publish=true ;;
+            workflow_dispatch) [ "$IN_DRY_RUN" = false ] && publish=true ;;
+          esac
+
           if upstream=$(gh api "repos/rusefi/rusefi/releases/tags/$ref" --jq .prerelease 2>/dev/null); then
             prerelease=$upstream
           else
             prerelease=true   # not an upstream release (branch/sha)
           fi
-          build=true; publish=false
-          # Board sources: opelpanfan/ECU_Build is private and GITHUB_TOKEN cannot read it, so CI
-          # needs them vendored at scripts/rusefi/board-overlay/<variant> (see scripts/rusefi/README.md).
-          if [ ! -f "config/$variant/board.mk" ] && [ ! -f "scripts/rusefi/board-overlay/$variant/board.mk" ]; then
-            msg="config/$variant and scripts/rusefi/board-overlay/$variant missing"
-            if [ "$EVENT" = push ]; then echo "::warning::$msg (skipping validation build)"; build=false
-            else echo "::error::$msg"; exit 1; fi
+
+          python3 scripts/ci/list_boards.py --json > /tmp/boards.json
+          python3 -c "import json; d=json.load(open('/tmp/boards.json'));\nprint('### Skipped config folders') if d['skipped'] else None;\n[print('- `%s`: %s' % (s['name'], s['reason'])) for s in d['skipped']]" >> "$GITHUB_STEP_SUMMARY"
+          mapfile -t all_boards < <(python3 scripts/ci/list_boards.py)
+          all="${all_boards[*]}"
+
+          if [ "$EVENT" = workflow_dispatch ]; then
+            variants="${IN_VARIANT:-all}"; [ "$variants" = all ] && variants="$all"
+          else
+            variants="$all"
           fi
-          case "$EVENT" in
-            schedule)
-              if [ "$exists" = true ]; then build=false; else publish=true; fi ;;
-            workflow_dispatch)
-              if [ "$exists" = true ] && [ "$IN_FORCE" != true ]; then build=false; fi
-              if [ "$IN_DRY_RUN" = false ] && [ "$exists" = false ]; then publish=true; fi ;;
-            *) ;;  # push: validation build, never publishes
-          esac
+
+          todo=()
+          for v in ${variants//,/ }; do
+            case "$v" in *teensy*|*Teensy*|*TEENSY*|opf33_fome)
+              echo "::warning::skipping variant $v"; continue ;;
+            esac
+            if [ ! -f "config/$v/board.mk" ] && [ ! -f "scripts/rusefi/board-overlay/$v/board.mk" ]; then
+              echo "::error::unknown variant $v (no config/$v/board.mk)"; exit 1
+            fi
+            rtag="rusefi-${safe}-${v}"
+            if gh release view "$rtag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then exists=true; else exists=false; fi
+            build=true
+            case "$EVENT" in
+              schedule) [ "$exists" = true ] && build=false ;;
+              workflow_dispatch) [ "$exists" = true ] && [ "$IN_FORCE" != true ] && build=false ;;
+              *) ;;  # push: validation build, never publishes
+            esac
+            echo "$v: release $rtag exists=$exists -> build=$build"
+            echo "- \`$v\`: release \`$rtag\` exists=$exists -> build=$build" >> "$GITHUB_STEP_SUMMARY"
+            [ "$build" = true ] && todo+=("$v")
+          done
+          matrix=$(printf '%s\n' "${todo[@]+"${todo[@]}"}" | jq -R . | jq -sc 'map(select(length>0))')
           {
-            echo "ref=$ref"; echo "variant=$variant"; echo "tag=$tag"
-            echo "build=$build"; echo "publish=$publish"; echo "prerelease=$prerelease"
+            echo "ref=$ref"; echo "matrix=$matrix"
+            echo "any=$([ "$matrix" != "[]" ] && echo true || echo false)"
+            echo "publish=$publish"; echo "prerelease=$prerelease"
           } | tee -a "$GITHUB_OUTPUT"
-          echo "### rusEFI \`$ref\` / \`$variant\` -> \`$tag\` (exists=$exists, build=$build, publish=$publish)" >> "$GITHUB_STEP_SUMMARY"
+          echo "### rusEFI \`$ref\` ($EVENT): variants \`$matrix\`, publish=$publish" >> "$GITHUB_STEP_SUMMARY"
 
   build:
-    name: Build ${{ needs.check.outputs.tag }}
-    needs: check
-    if: needs.check.outputs.build == 'true'
+    name: Build rusefi-${{ needs.plan.outputs.ref }}-${{ matrix.variant }}
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: write   # only used by the release step (publish=true)
+      contents: write   # only used when publish=true (release + commit to the board branch)
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -140,11 +171,12 @@ jobs:
           path: ${{ env.TOOLCHAIN_DIR }}
           key: ${{ env.TOOLCHAIN_KEY }}
 
-      # Board branch (e.g. core48_21) that receives the firmware under rusefi/ (FOME/Speeduino own fome/, speeduino/).
-      - name: Checkout board branch ${{ needs.check.outputs.variant }}
+      - name: Checkout board branch ${{ matrix.variant }}
+        id: br
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.check.outputs.variant }}
+          ref: ${{ matrix.variant }}
           path: publish-target
           fetch-depth: 0
           token: ${{ github.token }}
@@ -153,21 +185,26 @@ jobs:
         id: b
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          REF: ${{ needs.check.outputs.ref }}
-          VARIANT: ${{ needs.check.outputs.variant }}
-          PUBLISH: ${{ needs.check.outputs.publish }}
+          REF: ${{ needs.plan.outputs.ref }}
+          VARIANT: ${{ matrix.variant }}
+          PUBLISH: ${{ needs.plan.outputs.publish }}
+          HAS_BRANCH: ${{ steps.br.outcome == 'success' && 'true' || 'false' }}
         run: |
           set -o pipefail
-          pub=(--publish-branch "$VARIANT" --publish-dir "$GITHUB_WORKSPACE/publish-target")
-          [ "$PUBLISH" = true ] || pub+=(--publish-dry-run)   # dry_run dispatch + push validation never commit
-          scripts/rusefi/build_rusefi_core48.sh --ref "$REF" --variant "$VARIANT" \
+          pub=()
+          if [ "$HAS_BRANCH" = true ]; then
+            pub=(--publish-branch "$VARIANT" --publish-dir "$GITHUB_WORKSPACE/publish-target")
+            [ "$PUBLISH" = true ] || pub+=(--publish-dry-run)
+          else
+            echo "::warning::board branch $VARIANT does not exist - firmware will be built, nothing committed"
+          fi
+          scripts/rusefi/build_rusefi.sh --ref "$REF" --variant "$VARIANT" \
             --work "$RUNNER_TEMP/rusefi-build" --out "$GITHUB_WORKSPACE/out" \
             --toolchain-dir "$TOOLCHAIN_DIR" "${pub[@]}" 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       - name: Report build failure
         if: failure()
         run: |
-          # surface the failure as annotations (readable without downloading logs)
           log="$RUNNER_TEMP/build.log"
           [ -f "$log" ] || exit 0
           enc() { sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g'; }
@@ -178,7 +215,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: rusefi-build-log
+          name: rusefi-build-log-${{ matrix.variant }}
           path: ${{ runner.temp }}/build.log
           if-no-files-found: ignore
 
@@ -193,34 +230,37 @@ jobs:
             echo '```'; sed -n '/^=== Publishing/,/^=== DONE/p' "$RUNNER_TEMP/build.log"; echo '```'
             echo '```'; cat out/SHA256SUMS; echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          enc() { sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g'; }
-          echo "::notice title=board branch (rusefi/)::$(sed -n '/^=== Publishing/,/^=== DONE/p' "$RUNNER_TEMP/build.log" | cut -c1-200 | enc)"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ needs.check.outputs.tag }}
+          name: rusefi-${{ needs.plan.outputs.ref }}-${{ matrix.variant }}
           path: out/
           if-no-files-found: error
 
-      - name: Publish GitHub release ${{ needs.check.outputs.tag }}
-        if: needs.check.outputs.publish == 'true'
+      - name: Publish GitHub release rusefi-${{ needs.plan.outputs.ref }}-${{ matrix.variant }}
+        if: needs.plan.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.check.outputs.tag }}
-          REF: ${{ needs.check.outputs.ref }}
-          PRERELEASE: ${{ needs.check.outputs.prerelease }}
+          REF: ${{ needs.plan.outputs.ref }}
+          VARIANT: ${{ matrix.variant }}
+          PRERELEASE: ${{ needs.plan.outputs.prerelease }}
           SIG: ${{ steps.b.outputs.signature }}
           SHA: ${{ steps.b.outputs.rusefi_commit }}
         run: |
           set -euo pipefail
+          safe=$(printf '%s' "$REF" | tr -c 'A-Za-z0-9._-' '-')
+          TAG="rusefi-${safe}-${VARIANT}"
           if gh release view "$TAG" >/dev/null 2>&1; then echo "release $TAG already exists, not overwriting"; exit 0; fi
           {
-            echo "rusEFI firmware for OPF core48, built from rusefi/rusefi \`$REF\` (\`$SHA\`)."
+            echo "rusEFI firmware for \`$VARIANT\`, built from rusefi/rusefi \`$REF\` (\`$SHA\`)."
             echo
             echo "TunerStudio signature: \`$SIG\`"
             echo
+            echo "Release assets share this tag prefix (\`$TAG.bin\`, \`$TAG.ini\`, \`$TAG-base.msq\`, ...). Flash the \`.dfu\` or \`.bin\` via STM32 DFU (0483:df11). Load \`$TAG.ini\` in TunerStudio."
+            echo
             echo '```'; cat out/SHA256SUMS; echo '```'
           } > notes.md
-          pre=(); [ "$PRERELEASE" = true ] && pre=(--prerelease)
+          pre=(--latest=false)
+          [ "$PRERELEASE" = true ] && pre+=(--prerelease)
           gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --notes-file notes.md "${pre[@]}" out/*

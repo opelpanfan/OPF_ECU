@@ -1,17 +1,17 @@
-# rusEFI auto-build for the OPF core48 board
+# rusEFI autobuild for OPF STM32F407 boards
 
-* `build_rusefi_core48.sh` – builds rusEFI for a core48 variant (default `core48_21`). Used by CI and locally.
+* `build_rusefi.sh` – builds rusEFI for an OPF STM32F407 board variant (default is set by CI to all boards under config/). Used by CI and locally.
 * `rusefi_board_fixups.py` – adapts ECU_Build `board_configuration.cpp` to the current rusEFI board API.
-* `../../.github/workflows/rusefi-core48-autobuild.yml` – polls rusefi/rusefi releases and builds new ones.
+* `../../.github/workflows/rusefi-autobuild.yml` – polls rusefi/rusefi releases and builds new ones.
 
 ## Local build
 
 ```sh
 # needs: git curl make python3 zip 7z mcopy mkfs.fat xxd binutils, Java 17+,
 #        gcc-multilib g++-multilib (or docker) for the base tune
-scripts/rusefi/build_rusefi_core48.sh                           # latest stable rusEFI release, core48_21
-scripts/rusefi/build_rusefi_core48.sh --ref 2026-10-21          # a nightly tag
-scripts/rusefi/build_rusefi_core48.sh --ref master --variant core48_21 --ecu-build-dir ~/Projects/ECU_Build
+scripts/rusefi/build_rusefi.sh                           # latest stable rusEFI release, core48_21
+scripts/rusefi/build_rusefi.sh --ref 2026-10-21          # a nightly tag
+scripts/rusefi/build_rusefi.sh --ref master --variant core48_21 --ecu-build-dir ~/Projects/ECU_Build
 ```
 
 Artifacts land in `.rusefi-build/out/` (or `--out`):
@@ -98,6 +98,6 @@ implies `--with-console`).
 
 ## Verification (2026-10-21)
 
-Fresh clone of this branch, `build_rusefi_core48.sh --ref f9115629c6a1f75a2bd325c3cc447a8971c81746`:
+Fresh clone of this branch, `build_rusefi.sh --ref f9115629c6a1f75a2bd325c3cc447a8971c81746`:
 signature `rusEFI master.2026.10.21.core8.3847534957` and `.ini` identical to the manual local build;
 `.bin` identical except the 5-byte `__TIME__` string (now pinned via `SOURCE_DATE_EPOCH`).

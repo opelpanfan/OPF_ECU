@@ -37,5 +37,20 @@ Pins 23-31 have back-silkscreen labels. Generated from <code>config/opf33/board.
 <p><img src="https://github.com/opelpanfan/OPF_ECU/assets/12942077/83f4c142-d014-474f-8db0-7748346d7d1c" alt="VR trigger setup" style="max-width:100%;height:auto"></p>
 <h2>Notes</h2>
 <ul><li>V1.1 uses a single 33-pin connector. The older Black/Grey 48-pin tables in earlier manuals do not apply.</li><li>V1.1 removed the throttle-body (DBW), EGT and stepper connectors. TPS goes on IN_A3 (pin 14), not on a separate DBW plug.</li><li>IN_A1 and IN_A2 have permanent 2.49 k pull-ups to +5V (R85/R86). Use them for CLT and IAT. Do not wire a TPS pot to pins 12 or 13.</li><li>Primary trigger default is Hall on pin 8 (PG1) with JP4 in the Hall position, 60-2.</li><li>Back silkscreen labels exist only on pins 23-31 (INJ1-4, FUEL, FAN, IDLE, BOOST, TACHO).</li><li>On-board MAP is PA3 (MPXHZ6400). On-board wideband linear output is PA4 (14point7). Battery sense is PB1 with a 7.34 divider.</li><li>CAN2, knock, ETB, EGT and the idle stepper are disabled in the firmware defaults.</li></ul>
+
+<section id="firmware">
+<h2>Firmware (rusEFI, FOME, Speeduino)</h2>
+<p>OPF33 is built for all three firmwares. Release assets use the tag as a filename prefix.</p>
+<ul>
+<li>rusEFI (pinned <code>df128dec524d820bb767bcc503d8561ef01e258c</code>):
+  <a href="https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-opf33">release</a></li>
+<li>FOME (pinned <code>3b772a890ae0703793b14f08822c20f34b386b8c</code>):
+  <a href="https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-opf33">release</a>
+  — first install via DFU, later updates via OpenBLT</li>
+<li>Speeduino (pinned <code>202501.7</code>):
+  <a href="https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-opf33">release</a></li>
+</ul>
+<p><a href="index.html">All boards</a></p>
+</section>
 </body>
 </html>
