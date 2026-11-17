@@ -249,8 +249,10 @@ def apply_board(tree, board_dir, common_dir, platform):
              r"\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)\n  #define USE_SPI_EEPROM OPF_SPI_FLASH_CS /*OPF: W25Qxx SPI flash on OPF_SPI_FLASH_* pins*/\n#endif\n",
              "EEPROM selection comment block")
     s = edit(s, p, r"^([ \t]*)#ifdef USE_SPI_EEPROM\n(\s*#define pinIsReserved\(pin\))",
-             r"\1#if defined(OPF_BOARD)\n"
+             r"\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)\n"
              r"    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == OPF_SPI_FLASH_MOSI) || ((pin) == OPF_SPI_FLASH_MISO) || ((pin) == OPF_SPI_FLASH_SCK) || ((pin) == OPF_SPI_FLASH_CS) ) //USB + OPF SPI flash" "\n"
+             r"\1#elif defined(OPF_BOARD)\n"
+             r"    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) ) //USB only (this board has no SPI flash EEPROM)\n"
              r"\1#elif defined(USE_SPI_EEPROM)" "\n" r"\2",
              "pinIsReserved() for USE_SPI_EEPROM")
     s = edit(s, p, r"^(#endif //CORE_STM32\s*\n)", "#if defined(OPF_BOARD)\n  #include \"opf_board.h\"\n#endif\n\\1", "'#endif //CORE_STM32'")
@@ -259,7 +261,7 @@ def apply_board(tree, board_dir, common_dir, platform):
     # 4) board_stm32_official.cpp: SPI flash bus, board init hook
     p = os.path.join(fw, "board_stm32_official.cpp"); s = rd(p)
     s = edit(s, p, r"^([ \t]*)#if defined\(STM32F407xx\)\n(\s*SPIClass SPI_for_flash\(PB5, PB4, PB3\);)",
-             r"\1#if defined(OPF_BOARD)" "\n" r"\1  SPIClass SPI_for_flash(OPF_SPI_FLASH_MOSI, OPF_SPI_FLASH_MISO, OPF_SPI_FLASH_SCK);" "\n" r"\1#elif defined(STM32F407xx)" "\n" r"\2",
+             r"\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)" "\n" r"\1  SPIClass SPI_for_flash(OPF_SPI_FLASH_MOSI, OPF_SPI_FLASH_MISO, OPF_SPI_FLASH_SCK);" "\n" r"\1#elif defined(STM32F407xx)" "\n" r"\2",
              "SPI_for_flash definition")
     s = insert_at_body_start(s, p, r"\bvoid\s+initBoard\s*\(\s*(?:void)?\s*\)", "initBoard",
         "    #if defined(OPF_BOARD)\n    opfBoardInit(); //OPF: status LEDs, onboard baro, CAN2\n    #endif\n")
