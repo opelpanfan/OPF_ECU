@@ -60,7 +60,7 @@ static void setupVbatt() {
 	engineConfiguration->analogInputDividerCoefficient = 1.56f;
 	
 	// 6.34k high side/ 1k low side
-	engineConfiguration->vbattDividerCoeff = (6.34 + 1) / 1; 
+	engineConfiguration->vbattDividerCoeff = 7.34f; 
 
 	// Battery sense on PB1 (BRV_CPU)
 	engineConfiguration->vbattAdcChannel = EFI_ADC_9;
