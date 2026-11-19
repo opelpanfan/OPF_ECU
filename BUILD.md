@@ -6,9 +6,10 @@ firmware CI. It follows the existing OPF_ECU autobuild conventions
 artifacts on per-board branches) and vendors every STM32F407 `config/<board>`
 folder so CI no longer needs the private ECU_Build repo.
 
-Do not push this work to `main` or `master`. Scheduled workflows still only run
-from the default branch (`main`); until these workflow files are on `main`,
-builds start from a push to `master-grok` or `workflow_dispatch`.
+Do not push this work to `main` or `master`. Workflows run only on a `v*` tag
+push or `workflow_dispatch`. A `v*` tag builds every board and publishes
+releases that do not already exist. `workflow_dispatch` is a dry run unless
+`dry_run=false`.
 
 All boards on this branch are STM32F407. Teensy is not built, and Teensy
 targets are not present in the rusEFI, FOME, or Speeduino matrices.
@@ -37,8 +38,9 @@ overlays live under `config/opf33/generated/` for review.
 - Speeduino: `202501.7` (commit `cd3d0e38d276a7bd087a9dc86fd976780539ce8f` on `speeduino/speeduino`)
 
 `workflow_dispatch` can override `ref` (including `latest`) and `variant`.
-Publishing a release and committing firmware to the board branch happens only
-when `dry_run=false`. Push validation never publishes.
+A `v*` tag push builds every board and publishes missing releases (not a dry
+run). Manual dispatch publishes only when `dry_run=false`. An existing release
+is never overwritten, and release creation passes `--latest=false`.
 
 ## Local build
 

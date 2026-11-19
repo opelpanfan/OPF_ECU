@@ -5,13 +5,15 @@
 # Release tag: fome-<ref>-<variant>. Release assets use the same prefix
 # (fome-<ref>-<variant>.bin, .ini, -base.msq, .update.srec, .bl.srec, ...).
 # Board-branch copies under fome/ keep the short names (fome.bin, ...).
-# Push to master-grok is validation only. Never overwrites an existing release.
-# Never steals the repo-wide Latest badge.
+# Triggers: a v* tag push, or workflow_dispatch. A tag push (event name "push")
+# builds every board and publishes releases that do not exist yet (not a dry run).
+# workflow_dispatch publishes only when dry_run=false. Never overwrites an existing
+# release. Never steals the repo-wide Latest badge (--latest=false).
 name: FOME autobuild
 
 on:
-  schedule:
-    - cron: "47 */6 * * *"   # poll FOME releases every 6h (GitHub runs schedules from the default branch only)
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       ref:
@@ -32,13 +34,6 @@ on:
         type: boolean
         required: false
         default: false
-  push:
-    branches: [master-grok]
-    paths:
-      - "scripts/fome/**"
-      - "scripts/ci/**"
-      - "config/**"
-      - ".github/workflows/fome-autobuild.yml"
 
 permissions:
   contents: read
@@ -87,8 +82,9 @@ jobs:
             | grep -oE 'arm-gnu-toolchain-[^ ]*-x86_64-arm-none-eabi' | grep -v darwin | head -1 || true)
 
           publish=false
+          # Tag pushes arrive as event "push" (this workflow has no branch trigger).
           case "$EVENT" in
-            schedule) publish=true ;;
+            push) publish=true ;;
             workflow_dispatch) [ "$IN_DRY_RUN" = false ] && publish=true ;;
           esac
 
@@ -111,9 +107,8 @@ jobs:
             if gh release view "$rtag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then rel=true; else rel=false; fi
             build=true
             case "$EVENT" in
-              schedule) [ "$rel" = true ] && build=false ;;
               workflow_dispatch) [ "$rel" = true ] && [ "$IN_FORCE" != true ] && build=false ;;
-              *) ;;  # push: validation only
+              *) ;;  # v* tag push: build every board; the release step skips ones that exist
             esac
             echo "$v: overlay=$overlay release $rtag exists=$rel -> build=$build"
             echo "- \`$v\`: overlay \`$overlay\`, release \`$rtag\` exists=$rel -> build=$build" >> "$GITHUB_STEP_SUMMARY"

@@ -3,14 +3,15 @@
 # Release tag: rusefi-<ref>-<variant>. Release assets use the same prefix
 # (rusefi-<ref>-<variant>.bin, .ini, -base.msq, -manual.md, .build-info.txt, ...).
 # Board-branch copies under rusefi/ keep the short names (rusefi_firmware.bin, ...).
-# Push to master-grok is validation only. Publishing is workflow_dispatch dry_run=false
-# or a scheduled run on the default branch when the release does not already exist.
-# Never overwrites an existing release. Never steals the repo-wide Latest badge.
+# Triggers: a v* tag push, or workflow_dispatch. A tag push (event name "push")
+# builds every board and publishes releases that do not exist yet (not a dry run).
+# workflow_dispatch publishes only when dry_run=false. Never overwrites an existing
+# release. Never steals the repo-wide Latest badge (--latest=false).
 name: rusEFI autobuild
 
 on:
-  schedule:
-    - cron: "17 */6 * * *"   # poll rusefi/rusefi releases every 6h (runs from the default branch only)
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       ref:
@@ -31,13 +32,6 @@ on:
         type: boolean
         required: false
         default: false
-  push:
-    branches: [master-grok]
-    paths:
-      - "scripts/rusefi/**"
-      - "scripts/ci/**"
-      - "config/**"
-      - ".github/workflows/rusefi-autobuild.yml"
 
 permissions:
   contents: read
@@ -76,18 +70,17 @@ jobs:
           IN_VARIANT: ${{ github.event.inputs.variant }}
           IN_DRY_RUN: ${{ github.event.inputs.dry_run }}
           IN_FORCE: ${{ github.event.inputs.force }}
-          TRACK: ${{ vars.RUSEFI_TRACK }}
         run: |
           set -euo pipefail
           DEFAULT_REF="df128dec524d820bb767bcc503d8561ef01e258c"
           ref="${IN_REF:-$DEFAULT_REF}"
-          if [ "$EVENT" = schedule ] && [ "${TRACK:-stable}" = nightly ]; then ref=latest-nightly; fi
           ref=$(scripts/rusefi/build_rusefi.sh --resolve-only --ref "$ref")
           safe=$(printf '%s' "$ref" | tr -c 'A-Za-z0-9._-' '-')
 
           publish=false
+          # Tag pushes arrive as event "push" (this workflow has no branch trigger).
           case "$EVENT" in
-            schedule) publish=true ;;
+            push) publish=true ;;
             workflow_dispatch) [ "$IN_DRY_RUN" = false ] && publish=true ;;
           esac
 
@@ -118,9 +111,8 @@ jobs:
             if gh release view "$rtag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then exists=true; else exists=false; fi
             build=true
             case "$EVENT" in
-              schedule) [ "$exists" = true ] && build=false ;;
               workflow_dispatch) [ "$exists" = true ] && [ "$IN_FORCE" != true ] && build=false ;;
-              *) ;;  # push: validation build, never publishes
+              *) ;;  # v* tag push: build every board; the release step skips ones that exist
             esac
             echo "$v: release $rtag exists=$exists -> build=$build"
             echo "- \`$v\`: release \`$rtag\` exists=$exists -> build=$build" >> "$GITHUB_STEP_SUMMARY"

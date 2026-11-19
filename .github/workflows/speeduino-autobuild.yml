@@ -6,24 +6,20 @@ name: Speeduino autobuild
 # (rusefi-autobuild.yml, fome-autobuild.yml). Build logic lives in scripts/speeduino/build_speeduino.sh;
 # CI calls it with the same arguments as a local build. Publishing is never done by hand.
 #
-# Triggers:
-# - schedule (every 6h): resolves the latest upstream release and builds + publishes each variant whose
-#   release speeduino-<tag>-<variant> is missing (or whose board branch/readme section is outdated).
-# - workflow_dispatch: ref (tag/branch, "latest"), variant (default core48_21, or "all"), dry_run (default
+# Triggers (only these two):
+# - push of a v* tag (event name "push"; there is no branch trigger): builds every variant and publishes
+#   what is missing. Not a dry run. Creates speeduino-<tag>-<variant> if it does not exist and commits to
+#   the board branch only if speeduino/ or the readme SPEEDUINO section would change. Idempotent.
+#   An existing release is never overwritten (--latest=false).
+# - workflow_dispatch: ref (tag/branch, "latest"), variant (default all), dry_run (default
 #   true = build + artifacts only, no release, no board-branch commit; the planned board-branch change is
 #   printed), force (build even if already published; never overwrites an existing release).
-#   NOTE: GitHub runs schedule and workflow_dispatch only for workflows on the DEFAULT branch (main). While
-#   this file lives only on master-speeduino-grok both are inert; copying it to main (Benas' decision)
-#   enables them.
-# - push to master-grok (scripts/speeduino/**, this file): always builds all variants (validation)
-#   and publishes what is missing: creates speeduino-<tag>-<variant> if it does not exist and commits to the
-#   board branch only if speeduino/ or the readme SPEEDUINO section would change. Idempotent.
 # Board branch: only <firmware_dir>/ (speeduino/) and the text between <!-- SPEEDUINO:START/END --> in the
 # readme are ever modified (guard before commit, after every rebase and after the push); plain push, no force.
 
 on:
-  schedule:
-    - cron: '41 */6 * * *'   # poll speeduino/speeduino releases every 6h (default branch only)
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       ref:
@@ -44,13 +40,6 @@ on:
         type: boolean
         required: false
         default: false
-  push:
-    branches: [master-grok]
-    paths:
-      - 'scripts/speeduino/**'
-      - 'scripts/ci/**'
-      - 'config/**'
-      - '.github/workflows/speeduino-autobuild.yml'
 
 permissions:
   contents: read
@@ -97,9 +86,9 @@ jobs:
           [[ "$tag" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid Speeduino ref '$tag'"; exit 1; }
 
           publish=false
+          # Tag pushes arrive as event "push" (this workflow has no branch trigger).
           case "$EVENT" in
-            schedule) publish=true ;;
-            # Push to master-grok is validation only (same as rusEFI/FOME on this branch).
+            push) publish=true ;;
             workflow_dispatch) [ "$IN_DRY_RUN" = false ] && publish=true ;;
           esac
 
@@ -135,9 +124,8 @@ jobs:
             if [ "$rel" = true ] && { [ -z "$br" ] || { [ "$have" = "$tag" ] && [ "$readme_ok" = true ]; }; }; then published=true; fi
             build=true
             case "$EVENT" in
-              schedule) [ "$published" = true ] && build=false ;;
               workflow_dispatch) [ "$published" = true ] && [ "$IN_FORCE" != true ] && build=false ;;
-              push) ;;  # always build (validation); release/branch are only written if missing/changed
+              push) ;;  # v* tag: build every board; release/branch writes skip what already exists
             esac
             echo "$v: release $rtag exists=$rel, ${br:-<no board branch>}:$dir/ has '${have:-nothing}', readme section current=$readme_ok -> published=$published, build=$build"
             echo "- \`$v\`: release \`$rtag\` exists=$rel, board branch \`${br:-none}\` has \`${have:-nothing}\`, readme current=$readme_ok -> build=$build" >> "$GITHUB_STEP_SUMMARY"
