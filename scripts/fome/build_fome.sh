@@ -104,7 +104,7 @@ git -C "$FOME" fetch -q --depth 1 --no-tags origin "$FOME_REF" || die "FOME ref 
 # local branch named after the ref: FOME embeds the branch name in the TunerStudio signature
 REF_BRANCH=$(sed -E 's#[^A-Za-z0-9._-]+#-#g' <<<"$FOME_REF"); [[ "$FOME_REF" =~ ^[0-9a-f]{40}$ ]] && REF_BRANCH=${FOME_REF:0:10}
 git -C "$FOME" checkout -q -f -B "$REF_BRANCH" FETCH_HEAD
-git -C "$FOME" clean -qfdx firmware/config/boards firmware/deliver firmware/build firmware/.dep firmware/bootloader/blbuild simulator/build simulator/.dep 2>/dev/null || true
+git -C "$FOME" clean -qfdx firmware/config/boards firmware/deliver firmware/build firmware/.dep firmware/bootloader/.dep firmware/bootloader/blbuild simulator/build simulator/.dep 2>/dev/null || true
 FOME_SHA=$(git -C "$FOME" rev-parse HEAD)
 log "FOME commit $FOME_SHA"
 # Reproducibility: __DATE__/__TIME__ ("*** Compiled: ...") follow SOURCE_DATE_EPOCH (gcc >= 7), pinned to the

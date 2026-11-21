@@ -31,10 +31,12 @@ targets are not present in the rusEFI, FOME, or Speeduino matrices.
 CI still builds the hand-written `config/` files (known-good fallback). Generated
 overlays live under `config/opf33/generated/` for review.
 
-## Pins used for the first OPF33 builds
+## Pinned upstream versions (CI defaults)
 
-- rusEFI: `df128dec524d820bb767bcc503d8561ef01e258c`
-- FOME: `3b772a890ae0703793b14f08822c20f34b386b8c`
+Bumped 2026-11-21 (the first OPF33 builds used rusEFI `df128dec5`, FOME `3b772a89`).
+
+- rusEFI: `4e068e8a73e94f9922c2f0907667d8ba77f9bfc9`
+- FOME: `71a6e6ec246ee16b87e0667df1b79e8e838a05b2`
 - Speeduino: `202501.7` (commit `cd3d0e38d276a7bd087a9dc86fd976780539ce8f` on `speeduino/speeduino`)
 
 `workflow_dispatch` can override `ref` (including `latest`) and `variant`.
@@ -45,8 +47,8 @@ is never overwritten, and release creation passes `--latest=false`.
 ## Local build
 
 ```sh
-scripts/rusefi/build_rusefi.sh --ref df128dec524d820bb767bcc503d8561ef01e258c --variant opf33
-scripts/fome/build_fome.sh --ref 3b772a890ae0703793b14f08822c20f34b386b8c --variant opf33
+scripts/rusefi/build_rusefi.sh --ref 4e068e8a73e94f9922c2f0907667d8ba77f9bfc9 --variant opf33
+scripts/fome/build_fome.sh --ref 71a6e6ec246ee16b87e0667df1b79e8e838a05b2 --variant opf33
 scripts/speeduino/build_speeduino.sh --ref 202501.7 --variant opf33
 python3 tools/boardgen/generate_board.py config/opf33/board.yaml --docs-dir docs
 ```
