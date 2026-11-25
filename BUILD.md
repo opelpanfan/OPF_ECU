@@ -33,10 +33,10 @@ overlays live under `config/opf33/generated/` for review.
 
 ## Pinned upstream versions (CI defaults)
 
-Bumped 2026-11-21 (the first OPF33 builds used rusEFI `df128dec5`, FOME `3b772a89`).
+Bumped 2026-11-25 (previous pins: rusEFI `4e068e8a73e94f9922c2f0907667d8ba77f9bfc9`, FOME `71a6e6ec246ee16b87e0667df1b79e8e838a05b2`). Speeduino `202501.7` is still the newest GitHub release.
 
-- rusEFI: `4e068e8a73e94f9922c2f0907667d8ba77f9bfc9`
-- FOME: `71a6e6ec246ee16b87e0667df1b79e8e838a05b2`
+- rusEFI: `34b1633bc25fa948efe66dd93bdde1e173357fc9` (`rusefi/rusefi` master)
+- FOME: `477f9e471aaf5e29180a70dbc7230d259199b40a` (`FOME-Tech/fome-fw` master)
 - Speeduino: `202501.7` (commit `cd3d0e38d276a7bd087a9dc86fd976780539ce8f` on `speeduino/speeduino`)
 
 `workflow_dispatch` can override `ref` (including `latest`) and `variant`.
@@ -47,8 +47,8 @@ is never overwritten, and release creation passes `--latest=false`.
 ## Local build
 
 ```sh
-scripts/rusefi/build_rusefi.sh --ref 4e068e8a73e94f9922c2f0907667d8ba77f9bfc9 --variant opf33
-scripts/fome/build_fome.sh --ref 71a6e6ec246ee16b87e0667df1b79e8e838a05b2 --variant opf33
+scripts/rusefi/build_rusefi.sh --ref 34b1633bc25fa948efe66dd93bdde1e173357fc9 --variant opf33
+scripts/fome/build_fome.sh --ref 477f9e471aaf5e29180a70dbc7230d259199b40a --variant opf33
 scripts/speeduino/build_speeduino.sh --ref 202501.7 --variant opf33
 python3 tools/boardgen/generate_board.py config/opf33/board.yaml --docs-dir docs
 ```

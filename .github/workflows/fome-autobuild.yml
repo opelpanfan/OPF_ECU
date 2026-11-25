@@ -19,7 +19,7 @@ on:
       ref:
         description: 'FOME tag/branch/sha, "latest", or a pinned commit'
         required: false
-        default: 71a6e6ec246ee16b87e0667df1b79e8e838a05b2
+        default: 477f9e471aaf5e29180a70dbc7230d259199b40a
       variant:
         description: 'Board variant (config/<variant>/), comma list, or "all" (STM32F407 only; no Teensy)'
         required: false
@@ -74,7 +74,7 @@ jobs:
           IN_FORCE: ${{ github.event.inputs.force }}
         run: |
           set -euo pipefail
-          DEFAULT_REF="71a6e6ec246ee16b87e0667df1b79e8e838a05b2"
+          DEFAULT_REF="477f9e471aaf5e29180a70dbc7230d259199b40a"
           ref=$(scripts/fome/build_fome.sh --resolve-only --ref "${IN_REF:-$DEFAULT_REF}")
           safe=$(printf '%s' "$ref" | tr -c 'A-Za-z0-9._-' '-')
           commit=$(gh api "repos/FOME-Tech/fome-fw/commits/$ref" --jq .sha)
