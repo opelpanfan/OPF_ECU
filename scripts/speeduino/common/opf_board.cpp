@@ -28,6 +28,13 @@
 
 static inline void opfLedInit(uint8_t pin, uint8_t state) { pinMode(pin, OUTPUT); digitalWrite(pin, state); }
 
+// 202501.7 latches a global LOOP_TIMER. Later master stores it on currentStatus.
+#if defined(OPF_STATUS_LOOP_TIMER)
+#define OPF_LOOP_TIMER currentStatus.LOOP_TIMER
+#else
+#define OPF_LOOP_TIMER LOOP_TIMER
+#endif
+
 void opfBoardInit(void)
 {
 #if defined(OPF_LED_RUNNING)
@@ -85,10 +92,17 @@ void opfBoardLoop(void)
   else { digitalWrite(OPF_LED_COMS, LOW); }
 #endif
 #if defined(OPF_LED_ALERT)
-  if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ)) { digitalWrite(OPF_LED_ALERT, (currentStatus.engineProtectStatus != 0U) ? HIGH : LOW); }
+  if (BIT_CHECK(OPF_LOOP_TIMER, BIT_TIMER_4HZ)) {
+#if defined(OPF_STATUS_LOOP_TIMER)
+    const bool opfAlert = currentStatus.engineProtect.isActive();
+#else
+    const bool opfAlert = currentStatus.engineProtectStatus != 0U;
+#endif
+    digitalWrite(OPF_LED_ALERT, opfAlert ? HIGH : LOW);
+  }
 #endif
 #if defined(OPF_LED_RUNNING)
-  if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) { digitalToggle(OPF_LED_RUNNING); }
+  if (BIT_CHECK(OPF_LOOP_TIMER, BIT_TIMER_10HZ)) { digitalToggle(OPF_LED_RUNNING); }
 #endif
 }
 

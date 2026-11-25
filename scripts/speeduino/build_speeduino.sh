@@ -4,8 +4,10 @@
 #
 #   scripts/speeduino/build_speeduino.sh [options] [ref]
 #
-#   --ref REF           Speeduino tag/branch, or "latest" (default; latest noisymime/speeduino release).
-#                       A bare positional argument is the same as --ref.
+#   --ref REF           Speeduino tag/branch/commit, or "latest" (default; latest noisymime/speeduino release).
+#                       A bare positional argument is the same as --ref. A 40-char commit (the pinned
+#                       master HEAD) is fetched by SHA; its artifacts are named
+#                       speeduino-master-<10-char sha>-<board> so they do not collide with a release tag.
 #   --variant LIST      comma separated board variants from scripts/speeduino/board-overlay/<variant>/board.json
 #                       (default: all; alias -b/--boards)
 #   --work DIR          work dir for the temporary upstream checkout and build trees
@@ -15,9 +17,12 @@
 #   --keep              keep the temporary checkout/build trees in the work dir (default: removed on exit)
 #   --resolve-only      print the resolved Speeduino tag and exit
 #
-# Output per variant: speeduino_firmware.bin/.hex/.elf, speeduino_tunerstudio.ini, base-map.msq (base tune
-# generated from the built ini), opf-<variant>-speeduino-<tag>.patch, build-info.json and SHA256SUMS.
-# The build fails if the ini signature differs from the firmware signature.
+# Output per variant, under <out>/<board>/:
+#   short names (board-branch layout): speeduino_firmware.bin/.hex/.elf, speeduino_tunerstudio.ini,
+#   base-map.msq, opf-<board>-speeduino-<ref>.patch, build-info.json, SHA256SUMS
+#   release names (do not collide across refs): speeduino-<ref>-<board>.bin/.hex/.elf/.ini,
+#   speeduino-<ref>-<board>-base.msq. A commit SHA uses speeduino-master-<10-char sha>-<board> instead of
+#   speeduino-<sha>-<board>. The build fails if the ini signature differs from the firmware signature.
 #
 # Everything OPF specific (pin map, PlatformIO env, OPF sources, TunerStudio ini entries, base tune) is
 # generated here from scripts/speeduino/board-overlay/<variant>/board.json, scripts/speeduino/common/ and
@@ -186,6 +191,66 @@ def load_board(board_dir):
             raise SystemExit("ERROR: %s/board.json is missing '%s'" % (board_dir, k))
     return b
 
+INJ_RE = re.compile(r"^pinInjector(\d+)$")
+COIL_RE = re.compile(r"^pinCoil(\d+)$")
+# Gone from pinNumbers_t on master. They were spare inputs/outputs or pointed at the
+# unused pin; Speeduino never consumed them, so leaving them at NOT_A_PIN does not
+# move a connected injector, coil, or sensor.
+DROPPED_PIN_VARS = {
+    "pinSpareTemp1", "pinSpareTemp2", "pinMAP2", "pinDisplayReset",
+    "pinSpareOut1", "pinSpareOut2", "pinSpareOut3", "pinSpareOut4", "pinSpareOut5", "pinSpareOut6",
+    "pinSpareHOut1", "pinSpareHOut2",
+    "pinSpareLOut1", "pinSpareLOut2", "pinSpareLOut3", "pinSpareLOut4", "pinSpareLOut5",
+}
+
+def struct_pin_fields(tree, defined):
+    """None on the 202501.7 global-pin API. A set of assignable names on the pinNumbers_t API.
+
+    Fields inside `#if defined(MACRO)` count only when MACRO is set for this build
+    (MC33810 chip-select pins exist only with MC33810_SUPPORT, which OPF does not set).
+    """
+    path = os.path.join(tree, "speeduino", "src", "pins", "pinNumbers_t.h")
+    if not os.path.isfile(path):
+        return None
+    text = rd(path)
+    start = text.find("struct pinNumbers_t")
+    end = text.find("};", start)
+    body = text[start:end] if start >= 0 and end > start else text
+    fields, stack = set(), [True]
+    for raw in body.splitlines():
+        st = raw.strip()
+        mm = re.match(r"#ifdef\s+(\w+)", st) or re.match(r"#if\s+defined\s*\(\s*(\w+)\s*\)\s*$", st)
+        if mm:
+            stack.append(mm.group(1) in defined)
+            continue
+        if st.startswith("#else") and len(stack) > 1:
+            stack[-1] = not stack[-1]
+            continue
+        if st.startswith("#endif") and len(stack) > 1:
+            stack.pop()
+            continue
+        if not all(stack):
+            continue
+        mm = re.match(r"uint8_t\s+(pin\w+)\s*=", st)
+        if mm:
+            fields.add(mm.group(1))
+    if "setInjectorPin" in text:
+        fields.update("pinInjector%d" % i for i in range(1, 9))
+    if "setCoilPin" in text:
+        fields.update("pinCoil%d" % i for i in range(1, 9))
+    return fields
+
+def assign_line(var, pin, struct_mode):
+    if not struct_mode:
+        return "      %s = %s;" % (var, pin)
+    m = INJ_RE.match(var)
+    if m:
+        return "      pins.setInjectorPin(%d, %s);" % (int(m.group(1)) - 1, pin)
+    m = COIL_RE.match(var)
+    if m:
+        return "      pins.setCoilPin(%d, %s);" % (int(m.group(1)) - 1, pin)
+    return "      pins.%s = %s;" % (var, pin)
+
 def apply_board(tree, board_dir, common_dir, platform):
     b = load_board(board_dir)
     fw = os.path.join(tree, "speeduino")
@@ -206,56 +271,126 @@ def apply_board(tree, board_dir, common_dir, platform):
             raise Conflict("PATCH CONFLICT: upstream now ships speeduino/src/%s - reconcile with scripts/speeduino/common/src/%s" % (d, d))
         shutil.copytree(os.path.join(common_dir, "src", d), dst)
 
-    # 2) init.cpp: board id forcing + generated case in setPinMapping()
-    p = os.path.join(fw, "init.cpp"); s = rd(p)
-    globals_h = rd(os.path.join(fw, "globals.h"))
-    pinvars = set(re.findall(r"^\s*extern\s+(?:byte|uint8_t)\s+(pin\w+)\s*;", globals_h, re.M))
-    allvars = list(b["pins"].keys()) + list(b.get("unused_pin_vars", []))
-    missing = [v for v in allvars if v not in pinvars]
-    if missing:
-        conflict("speeduino/globals.h", "pin variables", "not declared upstream: %s" % ", ".join(missing))
+    # 2) Pin map. 202501.7: globals + a case inside setPinMapping().
+    # master: pinNumbers_t returned by getPinMapping() in src/pins/pinMapping.cpp.
     dup = set(b["pins"]) & set(b.get("unused_pin_vars", []))
     if dup:
         raise SystemExit("ERROR: board.json lists %s both as used and unused" % ", ".join(sorted(dup)))
-    sig = r"\bvoid\s+setPinMapping\s*\(\s*byte\s+boardID\s*\)"
-    fs, fe = func_span(s, p, sig, "setPinMapping")
-    if re.search(r"^\s*case\s+%d\s*:" % bid, s[fs:fe], re.M):
-        conflict(p, "setPinMapping()", "upstream already uses board id %d" % bid)
-    lines = ["    case %d:" % bid,
-             "      #if defined(%s) && defined(OPF_BOARD)" % b["mcu_guard"],
-             "      // %s - generated by scripts/speeduino/build_speeduino.sh from scripts/speeduino/board-overlay/%s/board.json" % (b.get("description", b["name"]), b["name"]),
-             "      // Pins not used on this board point at an unconnected pin instead of the default 0 (PA0 on STM32)."]
-    for v in b.get("unused_pin_vars", []):
-        lines.append("      %s = %s;" % (v, b["unused_pin"]))
-    for v, pin in b["pins"].items():
+    for v, pin in list(b["pins"].items()) + [(v, b["unused_pin"]) for v in b.get("unused_pin_vars", [])]:
         if not re.match(r"^P[A-K]\d{1,2}$", pin):
             raise SystemExit("ERROR: board.json pin %s=%s is not an STM32 pin name" % (v, pin))
-        lines.append("      %s = %s;" % (v, pin))
-    lines += ["      #endif", "      break;", ""]
-    s = edit(s, p, r"^(?=[ \t]*case\s+60\s*:)", "\n".join(lines) + "\n", "setPinMapping() 'case 60:' anchor", fs, fe)
+    defined = set(b.get("defines", {}))
+    if "OPF_SPI_FLASH_CS" in defined:
+        defined.add("USE_SPI_EEPROM")
+    struct_fields = struct_pin_fields(tree, defined)
+    struct_mode = struct_fields is not None
+    if not struct_mode:
+        globals_h = rd(os.path.join(fw, "globals.h"))
+        pinvars = set(re.findall(r"^\s*extern\s+(?:byte|uint8_t)\s+(pin\w+)\s*;", globals_h, re.M))
+        missing = [v for v in list(b["pins"]) + list(b.get("unused_pin_vars", [])) if v not in pinvars]
+        if missing:
+            conflict("speeduino/globals.h", "pin variables", "not declared upstream: %s" % ", ".join(missing))
+    else:
+        missing_used = [v for v in b["pins"] if v not in struct_fields and v not in DROPPED_PIN_VARS]
+        if missing_used:
+            conflict("speeduino/src/pins/pinNumbers_t.h", "pin variables", "not declared upstream: %s" % ", ".join(missing_used))
+        dropped = [v for v in list(b["pins"]) + list(b.get("unused_pin_vars", [])) if v not in struct_fields]
+        if dropped:
+            print("NOTE: %s: upstream has no %s; left at NOT_A_PIN" % (b["name"], ", ".join(dropped)), file=sys.stderr)
+
+    p = os.path.join(fw, "init.cpp"); s = rd(p)
+    sig = r"\bvoid\s+setPinMapping\s*\(\s*byte\s+boardID\s*\)"
     s = insert_at_body_start(s, p, sig, "setPinMapping",
         "  #if defined(OPF_BOARD)\n"
         "  //OPF firmware only runs on OPF hardware: always use the OPF pin map (also on first boot / blank flash)\n"
         "  boardID = OPF_BOARD_ID;\n"
         "  configPage2.pinMapping = OPF_BOARD_ID;\n"
         "  #endif\n")
+    if not struct_mode:
+        fs, fe = func_span(s, p, sig, "setPinMapping")
+        if re.search(r"^\s*case\s+%d\s*:" % bid, s[fs:fe], re.M):
+            conflict(p, "setPinMapping()", "upstream already uses board id %d" % bid)
+        lines = ["    case %d:" % bid,
+                 "      #if defined(%s) && defined(OPF_BOARD)" % b["mcu_guard"],
+                 "      // %s - generated by scripts/speeduino/build_speeduino.sh from scripts/speeduino/board-overlay/%s/board.json" % (b.get("description", b["name"]), b["name"]),
+                 "      // Pins not used on this board point at an unconnected pin instead of the default 0 (PA0 on STM32)."]
+        for v in b.get("unused_pin_vars", []):
+            lines.append(assign_line(v, b["unused_pin"], False))
+        for v, pin in b["pins"].items():
+            lines.append(assign_line(v, pin, False))
+        lines += ["      #endif", "      break;", ""]
+        s = edit(s, p, r"^(?=[ \t]*case\s+60\s*:)", "\n".join(lines) + "\n", "setPinMapping() 'case 60:' anchor", fs, fe)
     wr(p, s)
+    if struct_mode:
+        pm = os.path.join(fw, "src", "pins", "pinMapping.cpp")
+        if not os.path.isfile(pm):
+            conflict(pm, "pinMapping.cpp", "pinNumbers_t API but getPinMapping source is missing")
+        ps = rd(pm)
+        if "OPF_BOARD" in ps:
+            raise SystemExit("ERROR: %s already contains OPF edits" % pm)
+        body = ["#if defined(OPF_BOARD)",
+                "static pinNumbers_t getOpfBoardMapping(void)",
+                "{",
+                "  pinNumbers_t pins;",
+                "  // %s - generated from scripts/speeduino/board-overlay/%s/board.json" % (b.get("description", b["name"]), b["name"]),
+                "  // Same GPIO assignments as the 202501.7 overlay. Names upstream removed stay NOT_A_PIN."]
+        for v in b.get("unused_pin_vars", []):
+            if v not in struct_fields:
+                body.append("  // %s removed upstream (was %s, unused)" % (v, b["unused_pin"]))
+                continue
+            body.append(assign_line(v, b["unused_pin"], True).replace("      ", "  ", 1))
+        for v, pin in b["pins"].items():
+            if v not in struct_fields:
+                body.append("  // %s = %s removed upstream; no firmware function reads this pin" % (v, pin))
+                continue
+            body.append(assign_line(v, pin, True).replace("      ", "  ", 1))
+        body += ["  return pins;", "}", "#endif", ""]
+        ps = edit(ps, pm, r"^(pinNumbers_t\s+getPinMapping\s*\()", "\n".join(body) + "\\1", "getPinMapping() definition")
+        gsig = r"\bpinNumbers_t\s+getPinMapping\s*\(\s*uint8_t\s+boardID\s*\)"
+        fs, fe = func_span(ps, pm, gsig, "getPinMapping")
+        if re.search(r"case\s+%d\s*:" % bid, ps[fs:fe]):
+            conflict(pm, "getPinMapping()", "upstream already uses board id %d" % bid)
+        case = "    #if defined(OPF_BOARD)\n    case %d: return getOpfBoardMapping(); break;\n    #endif\n" % bid
+        ps = edit(ps, pm, r"^(?=[ \t]*default\s*:)", case, "getPinMapping() default", fs, fe)
+        wr(pm, ps)
 
     # 3) board_stm32_official.h: SD logging off, SPI flash EEPROM, reserved pins, OPF header
     p = os.path.join(fw, "board_stm32_official.h"); s = rd(p)
     s = edit(s, p, r"^#if defined\(STM32F407xx\)(\s*\n\s*//Comment out this to disable SD logging[^\n]*\n\s*#define SD_LOGGING)",
              r"#if defined(STM32F407xx) && !defined(OPF_BOARD)\1", "SD_LOGGING block")
-    s = edit(s, p, r"^(//#define FRAM_AS_EEPROM[^\n]*\n)",
-             r"\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)\n  #define USE_SPI_EEPROM OPF_SPI_FLASH_CS /*OPF: W25Qxx SPI flash on OPF_SPI_FLASH_* pins*/\n#endif\n",
-             "EEPROM selection comment block")
-    s = edit(s, p, r"^([ \t]*)#ifdef USE_SPI_EEPROM\n(\s*#define pinIsReserved\(pin\))",
-             r"\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)\n"
-             r"    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == OPF_SPI_FLASH_MOSI) || ((pin) == OPF_SPI_FLASH_MISO) || ((pin) == OPF_SPI_FLASH_SCK) || ((pin) == OPF_SPI_FLASH_CS) ) //USB + OPF SPI flash" "\n"
-             r"\1#elif defined(OPF_BOARD)\n"
-             r"    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) ) //USB only (this board has no SPI flash EEPROM)\n"
-             r"\1#elif defined(USE_SPI_EEPROM)" "\n" r"\2",
-             "pinIsReserved() for USE_SPI_EEPROM")
-    s = edit(s, p, r"^(#endif //CORE_STM32\s*\n)", "#if defined(OPF_BOARD)\n  #include \"opf_board.h\"\n#endif\n\\1", "'#endif //CORE_STM32'")
+    if re.search(r"^//#define FRAM_AS_EEPROM", s, re.M):
+        s = edit(s, p, r"^(//#define FRAM_AS_EEPROM[^\n]*\n)",
+                 r"\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)\n  #define USE_SPI_EEPROM OPF_SPI_FLASH_CS /*OPF: W25Qxx SPI flash on OPF_SPI_FLASH_* pins*/\n#endif\n",
+                 "EEPROM selection comment block")
+    else:
+        s = edit(s, p, r"^(#define CORE_STM32\s*\n)",
+                 "\\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)\n  #define USE_SPI_EEPROM OPF_SPI_FLASH_CS /*OPF: W25Qxx SPI flash on OPF_SPI_FLASH_* pins*/\n#endif\n",
+                 "CORE_STM32 SPI flash define")
+    if re.search(r"#define\s+pinIsReserved\s*\(\s*pin\s*\)", s):
+        s = edit(s, p, r"^([ \t]*)#ifdef USE_SPI_EEPROM\n(\s*#define pinIsReserved\(pin\))",
+                 r"\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)\n"
+                 r"    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == OPF_SPI_FLASH_MOSI) || ((pin) == OPF_SPI_FLASH_MISO) || ((pin) == OPF_SPI_FLASH_SCK) || ((pin) == OPF_SPI_FLASH_CS) ) //USB + OPF SPI flash" "\n"
+                 r"\1#elif defined(OPF_BOARD)\n"
+                 r"    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) ) //USB only (this board has no SPI flash EEPROM)\n"
+                 r"\1#elif defined(USE_SPI_EEPROM)" "\n" r"\2",
+                 "pinIsReserved() for USE_SPI_EEPROM")
+    else:
+        s = edit(s, p, r"^#else\n  #ifdef USE_SPI_EEPROM\n",
+                 "#else\n"
+                 "  #if defined(OPF_BOARD)\n"
+                 "    static inline bool pinIsReserved(uint8_t pin) {\n"
+                 "      return (pin == (uint8_t)PA11) || (pin == (uint8_t)PA12)\n"
+                 "#if defined(OPF_SPI_FLASH_CS)\n"
+                 "          || (pin == (uint8_t)OPF_SPI_FLASH_MOSI) || (pin == (uint8_t)OPF_SPI_FLASH_MISO) || (pin == (uint8_t)OPF_SPI_FLASH_SCK) || (pin == (uint8_t)OPF_SPI_FLASH_CS)\n"
+                 "#endif\n"
+                 "        ;\n"
+                 "    }\n"
+                 "  #elif defined(USE_SPI_EEPROM)\n",
+                 "pinIsReserved() static inline (master)")
+    if re.search(r"^#endif //CORE_STM32\s*$", s, re.M):
+        s = edit(s, p, r"^(#endif //CORE_STM32\s*\n)", "#if defined(OPF_BOARD)\n  #include \"opf_board.h\"\n#endif\n\\1", "'#endif //CORE_STM32'")
+    else:
+        s = s.rstrip("\n") + "\n#if defined(OPF_BOARD)\n  #include \"opf_board.h\"\n#endif\n"
     wr(p, s)
 
     # 4) board_stm32_official.cpp: SPI flash bus, board init hook
@@ -263,7 +398,7 @@ def apply_board(tree, board_dir, common_dir, platform):
     s = edit(s, p, r"^([ \t]*)#if defined\(STM32F407xx\)\n(\s*SPIClass SPI_for_flash\(PB5, PB4, PB3\);)",
              r"\1#if defined(OPF_BOARD) && defined(OPF_SPI_FLASH_CS)" "\n" r"\1  SPIClass SPI_for_flash(OPF_SPI_FLASH_MOSI, OPF_SPI_FLASH_MISO, OPF_SPI_FLASH_SCK);" "\n" r"\1#elif defined(STM32F407xx)" "\n" r"\2",
              "SPI_for_flash definition")
-    s = insert_at_body_start(s, p, r"\bvoid\s+initBoard\s*\(\s*(?:void)?\s*\)", "initBoard",
+    s = insert_at_body_start(s, p, r"\bvoid\s+initBoard\s*\([^;]*\)", "initBoard",
         "    #if defined(OPF_BOARD)\n    opfBoardInit(); //OPF: status LEDs, onboard baro, CAN2\n    #endif\n")
     wr(p, s)
 
@@ -278,8 +413,12 @@ def apply_board(tree, board_dir, common_dir, platform):
     # 6) speeduino.ino: per-loop board hook
     p = os.path.join(fw, "speeduino.ino"); s = rd(p)
     fs, fe = func_span(s, p, r"\bloop\s*\(\s*void\s*\)\s*(?=\{)", "loop")
-    s = edit(s, p, r"^([ \t]*LOOP_TIMER = TIMER_mask;[^\n]*\n)",
-             "\\1      #if defined(OPF_BOARD)\n      opfBoardLoop(); //OPF: status LEDs\n      #endif\n", "loop() 'LOOP_TIMER = TIMER_mask;'", fs, fe)
+    if re.search(r"^[ \t]*LOOP_TIMER = TIMER_mask;", s[fs:fe], re.M):
+        loop_anchor = r"^([ \t]*LOOP_TIMER = TIMER_mask;[^\n]*\n)"
+    else:
+        loop_anchor = r"^([ \t]*currentStatus\.LOOP_TIMER = getAndClearTimerMask\(\);[^\n]*\n)"
+    s = edit(s, p, loop_anchor,
+             "\\1      #if defined(OPF_BOARD)\n      opfBoardLoop(); //OPF: status LEDs\n      #endif\n", "loop() timer latch", fs, fe)
     wr(p, s)
 
     # 7) platformio.ini: own env derived from upstream's base env
@@ -299,14 +438,23 @@ def apply_board(tree, board_dir, common_dir, platform):
             conflict(p, "[%s] %s" % (base, k), "option missing")
     flags = " ".join(src["build_flags"].split())
     defs = ["-DOPF_BOARD", "-DOPF_BOARD_ID=%d" % bid, '-DOPF_BOARD_NAME=\\"%s\\"' % b["name"]]
+    ino = rd(os.path.join(fw, "speeduino.ino"))
+    if "currentStatus.LOOP_TIMER" in ino and "LOOP_TIMER = TIMER_mask" not in ino:
+        defs.append("-DOPF_STATUS_LOOP_TIMER")
     for k, v in b.get("defines", {}).items():
         defs.append("-D%s=%s" % (k, v))
+    def format_ini_value(v):
+        # configparser drops continuation-line indent. Put it back or PlatformIO rejects the file.
+        if "\n" not in v:
+            return " ".join(v.split())
+        parts = [ln.strip() for ln in v.splitlines() if ln.strip()]
+        return "\n" + "\n".join("\t" + part for part in parts)
     out = ["", "; ---- generated by OPF scripts/speeduino/build_speeduino.sh from scripts/speeduino/board-overlay/%s/board.json (based on [%s]) ----" % (b["name"], base),
            "[env:%s]" % env, "platform = %s" % platform, "board = %s" % b["pio_board"]]
     for k, v in src.items():
         if k in ("platform", "board", "build_flags"):
             continue
-        out.append("%s = %s" % (k, " ".join(v.split()) if "\n" not in v.strip() else v))
+        out.append("%s = %s" % (k, format_ini_value(v)))
     out.append("build_flags = %s %s" % (flags, " ".join(defs)))
     txt = txt.rstrip("\n") + "\n" + "\n".join(out) + "\n"
     wr(p, txt)
@@ -555,11 +703,30 @@ if [ -d "$PRISTINE/.git" ] && [ "$(git -C "$PRISTINE" config --get opf.tag || tr
   git -C "$PRISTINE" reset -q --hard && git -C "$PRISTINE" clean -qfdx
 else
   rm -rf "$PRISTINE"
-  log "cloning $UPSTREAM_REPO @ $TAG (shallow)"
-  git -c advice.detachedHead=false clone -q --depth 1 --branch "$TAG" "https://github.com/$UPSTREAM_REPO.git" "$PRISTINE"
+  log "fetching $UPSTREAM_REPO @ $TAG (shallow)"
+  if [[ "$TAG" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+    # git clone --branch does not accept a commit SHA.
+    git init -q "$PRISTINE"
+    git -C "$PRISTINE" remote add origin "https://github.com/$UPSTREAM_REPO.git"
+    git -C "$PRISTINE" fetch -q --depth 1 origin "$TAG"
+    git -C "$PRISTINE" -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
+  else
+    git -c advice.detachedHead=false clone -q --depth 1 --branch "$TAG" "https://github.com/$UPSTREAM_REPO.git" "$PRISTINE"
+  fi
   git -C "$PRISTINE" config opf.tag "$TAG"
 fi
 SPEEDUINO_COMMIT=$(git -C "$PRISTINE" rev-parse HEAD)
+if [[ "$TAG" =~ ^[0-9a-fA-F]{40}$ ]] && [ "$SPEEDUINO_COMMIT" != "$TAG" ]; then
+  die "checked out $SPEEDUINO_COMMIT, wanted $TAG"
+fi
+# Release tags stay speeduino-<tag>-<board>. A commit pin (master HEAD) is
+# speeduino-master-<10-char sha>-<board> so the two artifact sets never share a name.
+if [[ "$TAG" =~ ^[0-9a-fA-F]{7,40}$ || "$TAG" == master || "$TAG" == main ]]; then
+  ASSET_REF="master-${SPEEDUINO_COMMIT:0:10}"
+else
+  ASSET_REF="$TAG"
+fi
+log "artifact prefix speeduino-${ASSET_REF}-<board>"
 SPEEDUINO_DATE=$(git -C "$PRISTINE" log -1 --format=%cI)
 FW_SIG=$(grep -ohE 'F\("speeduino [0-9]+[^"]*"\)' "$PRISTINE/speeduino/comms_legacy.cpp" | head -1 | sed -E 's/F\("(.*)"\)/\1/')
 OPF_COMMIT=$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo unknown)
@@ -583,8 +750,12 @@ for BOARD in ${BOARDS//,/ }; do
 
   OUT="$OUT_ROOT/$BOARD"
   rm -rf "$OUT"; mkdir -p "$OUT"
+  # STEM is the release-asset prefix (speeduino-202501.7-<board> or speeduino-master-<sha10>-<board>).
+  STEM="speeduino-${ASSET_REF}-${BOARD}"
   cp "$BUILD/firmware.bin" "$OUT/speeduino_firmware.bin"
+  cp "$BUILD/firmware.bin" "$OUT/${STEM}.bin"
   cp "$BUILD/firmware.elf" "$OUT/speeduino_firmware.elf"
+  cp "$BUILD/firmware.elf" "$OUT/${STEM}.elf"
   PIO_PKGS=$(cd "$TREE" && pio pkg list -e "$ENV" 2>/dev/null | grep -E '@ [0-9]' | sed -E 's/^[^A-Za-z]*//; s/ \(required.*//' || true)
   PIO_CORE=${PLATFORMIO_CORE_DIR:-$HOME/.platformio}
   TC_VER=$(printf '%s\n' "$PIO_PKGS" | sed -nE 's/^toolchain-gccarmnoneeabi @ ([0-9.]+).*/\1/p')
@@ -595,10 +766,15 @@ for BOARD in ${BOARDS//,/ }; do
   done
   [ -n "$TC_DIR" ] || die "[$BOARD] toolchain-gccarmnoneeabi $TC_VER not found under $PIO_CORE/packages"
   OBJCOPY="$TC_DIR/bin/arm-none-eabi-objcopy"
-  [ -x "$OBJCOPY" ] && "$OBJCOPY" -O ihex "$BUILD/firmware.elf" "$OUT/speeduino_firmware.hex"
+  if [ -x "$OBJCOPY" ]; then
+    "$OBJCOPY" -O ihex "$BUILD/firmware.elf" "$OUT/speeduino_firmware.hex"
+    cp "$OUT/speeduino_firmware.hex" "$OUT/${STEM}.hex"
+  fi
   cp "$WORK/opf-$BOARD.patch" "$OUT/opf-$BOARD-speeduino-$TAG.patch"
+  cp "$WORK/opf-$BOARD.patch" "$OUT/${STEM}.patch"
 
   INI_SIG=$(python3 "$TOOL" ini "$TREE/reference/speeduino.ini" "$OUT/speeduino_tunerstudio.ini" "$BDIR") || die "[$BOARD] ini generation failed"
+  cp "$OUT/speeduino_tunerstudio.ini" "$OUT/${STEM}.ini"
   [ -n "$FW_SIG" ] || die "[$BOARD] could not read the firmware signature from speeduino/comms_legacy.cpp"
   [ -n "$INI_SIG" ] || die "[$BOARD] could not read the signature from the generated ini"
   [ "$INI_SIG" = "$FW_SIG" ] || die "[$BOARD] ini signature '$INI_SIG' != firmware signature '$FW_SIG'"
@@ -607,6 +783,7 @@ for BOARD in ${BOARDS//,/ }; do
   SEED=$(python3 -c 'import json,os,sys; b=json.load(open(sys.argv[1]+"/board.json")); s=b.get("base_tune",{}).get("seed"); print(os.path.normpath(os.path.join(sys.argv[1],s)) if s else "")' "$BDIR")
   TUNE_STATS=$(python3 "$TOOL" tune "$OUT/speeduino_tunerstudio.ini" "$SEED" "$BDIR" "$OUT/base-map.msq" \
                "Speeduino+$TAG" "$SPEEDUINO_DATE" "mcu_stm32,CELSIUS") || die "[$BOARD] base tune generation failed"
+  cp "$OUT/base-map.msq" "$OUT/${STEM}-base.msq"
 
   # memory usage as reported by PlatformIO's size check
   read -r RAM_USED RAM_MAX < <(sed -nE 's/^RAM:.*used ([0-9]+) bytes from ([0-9]+) bytes.*/\1 \2/p' "$WORK/pio-$BOARD.log" | tail -1)
@@ -616,8 +793,11 @@ for BOARD in ${BOARDS//,/ }; do
   GCC_VER=$("$TC_DIR/bin/arm-none-eabi-gcc" -dumpversion 2>/dev/null || echo unknown)
 
   BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-  ( cd "$OUT" && sha256sum speeduino_firmware.bin speeduino_firmware.elf $( [ -f speeduino_firmware.hex ] && echo speeduino_firmware.hex ) \
-      speeduino_tunerstudio.ini base-map.msq "opf-$BOARD-speeduino-$TAG.patch" > SHA256SUMS )
+  ( cd "$OUT" && sha256sum \
+      speeduino_firmware.bin speeduino_firmware.elf $( [ -f speeduino_firmware.hex ] && echo speeduino_firmware.hex ) \
+      speeduino_tunerstudio.ini base-map.msq "opf-$BOARD-speeduino-$TAG.patch" \
+      "${STEM}.bin" "${STEM}.elf" $( [ -f "${STEM}.hex" ] && echo "${STEM}.hex" ) \
+      "${STEM}.ini" "${STEM}-base.msq" "${STEM}.patch" > SHA256SUMS )
 
   python3 - "$OUT/build-info.json" <<EOF
 import json, sys
@@ -626,6 +806,7 @@ rom_used, rom, ram_used, ram = $ROM_USED, $ROM_MAX, $RAM_USED, $RAM_MAX
 pkgs = [l for l in """$PIO_PKGS""".splitlines() if l.strip()]
 info = {
   "board": "$BOARD", "pio_env": "$ENV", "speeduino_repo": "$UPSTREAM_REPO", "speeduino_tag": "$TAG",
+  "asset_prefix": "$STEM",
   "speeduino_commit": "$SPEEDUINO_COMMIT", "speeduino_commit_date": "$SPEEDUINO_DATE",
   "build_date": "$BUILD_DATE",
   "firmware_signature": "$FW_SIG", "ini_signature": "$INI_SIG",
@@ -639,8 +820,9 @@ info = {
   "sha256": dict(reversed(l.split()) for l in open("$OUT/SHA256SUMS").read().splitlines()),
 }
 json.dump(info, open(sys.argv[1], "w"), indent=2)
-print(json.dumps({k: info[k] for k in ("board","speeduino_tag","flash_used_bytes","flash_total_bytes","flash_used_pct","ram_used_bytes","ram_total_bytes","ram_used_pct")}))
+print(json.dumps({k: info[k] for k in ("board","speeduino_tag","asset_prefix","flash_used_bytes","flash_total_bytes","flash_used_pct","ram_used_bytes","ram_total_bytes","ram_used_pct")}))
 EOF
+  cp "$OUT/build-info.json" "$OUT/${STEM}.build-info.json"
   ( cd "$OUT" && sha256sum -c --quiet SHA256SUMS ) || die "[$BOARD] checksum verification failed"
   log "[$BOARD] artifacts in $OUT"
   ls -l "$OUT"

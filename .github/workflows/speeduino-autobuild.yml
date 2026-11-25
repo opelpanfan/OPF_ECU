@@ -11,9 +11,12 @@ name: Speeduino autobuild
 #   what is missing. Not a dry run. Creates speeduino-<tag>-<variant> if it does not exist and commits to
 #   the board branch only if speeduino/ or the readme SPEEDUINO section would change. Idempotent.
 #   An existing release is never overwritten (--latest=false).
-# - workflow_dispatch: ref (tag/branch, "latest"), variant (default all), dry_run (default
-#   true = build + artifacts only, no release, no board-branch commit; the planned board-branch change is
-#   printed), force (build even if already published; never overwrites an existing release).
+# - workflow_dispatch: ref ("both" = release pin and master pin, or one tag/sha), variant (default all),
+#   dry_run (default true = build + artifacts only, no release, no board-branch commit; the planned
+#   board-branch change is printed), force (build even if already published; never overwrites an existing release).
+# Two refs are built for every board: the release pin (202501.7) and the pinned master SHA.
+# Release assets are speeduino-<tag>-<board>.* and speeduino-master-<10-char sha>-<board>.* so they do not collide.
+# Only the release pin is committed to the board branch (speeduino/ short names). Master is a separate release.
 # Board branch: only <firmware_dir>/ (speeduino/) and the text between <!-- SPEEDUINO:START/END --> in the
 # readme are ever modified (guard before commit, after every rebase and after the push); plain push, no force.
 
@@ -23,9 +26,9 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Speeduino tag/branch, "latest", or a pinned commit (official speeduino/speeduino)'
+        description: 'both (release 202501.7 and pinned master), or one Speeduino tag/sha'
         required: false
-        default: '202501.7'
+        default: 'both'
       variant:
         description: 'Board variant (scripts/speeduino/board-overlay/<variant>), comma list, or "all" (STM32F407 only; no Teensy)'
         required: false
@@ -45,7 +48,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: speeduino-${{ github.ref }}-${{ github.event.inputs.variant || 'all' }}
+  group: speeduino-${{ github.ref }}-${{ github.event.inputs.variant || 'all' }}-${{ github.event.inputs.ref || 'both' }}
   cancel-in-progress: false
 
 env:
@@ -53,16 +56,20 @@ env:
   PLATFORMIO_VERSION: '6.2.0'
   STM32_PLATFORM: 'platformio/ststm32@19.5.0'
   SPEEDUINO_REPO: speeduino/speeduino
+  # Release pin stays the newest GitHub release. Master is the full SHA of speeduino/speeduino master.
+  SPEEDUINO_RELEASE_REF: '202501.7'
+  SPEEDUINO_MASTER_REF: 'b59336df1fa80c29f6a08cd5376604744a275bce'
 
 jobs:
   plan:
     name: Resolve Speeduino ref / compare with last build
     runs-on: ubuntu-latest
     outputs:
-      speeduino_tag: ${{ steps.plan.outputs.speeduino_tag }}
       matrix: ${{ steps.plan.outputs.matrix }}
       any: ${{ steps.plan.outputs.any }}
       publish: ${{ steps.plan.outputs.publish }}
+      release_ref: ${{ steps.plan.outputs.release_ref }}
+      master_ref: ${{ steps.plan.outputs.master_ref }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,9 +88,21 @@ jobs:
           IN_FORCE: ${{ github.event.inputs.force }}
         run: |
           set -euo pipefail
-          DEFAULT_REF="202501.7"
-          tag=$(scripts/speeduino/build_speeduino.sh --resolve-only --ref "${IN_REF:-$DEFAULT_REF}")
-          [[ "$tag" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid Speeduino ref '$tag'"; exit 1; }
+          RELEASE_REF="${SPEEDUINO_RELEASE_REF}"
+          MASTER_REF="${SPEEDUINO_MASTER_REF}"
+          # A v* tag builds both pins. Dispatch builds both unless ref names one tag or sha.
+          if [ "$EVENT" = workflow_dispatch ]; then
+            want="${IN_REF:-both}"
+          else
+            want=both
+          fi
+          case "$want" in
+            both|"") refs=("$RELEASE_REF" "$MASTER_REF") ;;
+            *) refs=("$want") ;;
+          esac
+          for ref in "${refs[@]}"; do
+            [[ "$ref" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::invalid Speeduino ref '$ref'"; exit 1; }
+          done
 
           publish=false
           # Tag pushes arrive as event "push" (this workflow has no branch trigger).
@@ -99,47 +118,68 @@ jobs:
           else
             variants="$all"
           fi
-          todo=()
-          for v in ${variants//,/ }; do
-            bj="scripts/speeduino/board-overlay/$v/board.json"
-            if [ ! -f "$bj" ]; then
-              echo "::error::$v: missing $bj — port the Speeduino overlay from config/$v"
+          items=()
+          for ref in "${refs[@]}"; do
+            if [ "$ref" = "$MASTER_REF" ] || [[ "$ref" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+              track=master
+              label="master-${ref:0:10}"
+            else
+              track=release
+              label=$(printf '%s' "$ref" | tr -c 'A-Za-z0-9._-' '-')
             fi
-            rtag="speeduino-$tag-$v"
-            if gh release view "$rtag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then rel=true; else rel=false; fi
-            # what the board branch carries: <dir>/build-info.json tag + a current readme SPEEDUINO section
-            br=$(jq -r '.firmware_branch // empty' "$bj")
-            dir=$(jq -r '.firmware_dir // "speeduino"' "$bj")
-            readme=$(jq -r '.firmware_readme // empty' "$bj")
-            have=""; readme_ok=true
-            if [ -n "$br" ]; then
-              have=$(gh api -H 'Accept: application/vnd.github.raw' "repos/$GITHUB_REPOSITORY/contents/$dir/build-info.json?ref=$br" 2>/dev/null \
-                     | jq -r '.speeduino_tag // empty' 2>/dev/null || true)
-              if [ -n "$readme" ]; then
-                gh api -H 'Accept: application/vnd.github.raw' "repos/$GITHUB_REPOSITORY/contents/$readme?ref=$br" > /tmp/fw-readme 2>/dev/null || : > /tmp/fw-readme
-                python3 scripts/speeduino/readme_section.py current /tmp/fw-readme --tag "$tag" || readme_ok=false
+            for v in ${variants//,/ }; do
+              bj="scripts/speeduino/board-overlay/$v/board.json"
+              if [ ! -f "$bj" ]; then
+                echo "::error::$v: missing $bj — port the Speeduino overlay from config/$v"
               fi
-            fi
-            published=false
-            if [ "$rel" = true ] && { [ -z "$br" ] || { [ "$have" = "$tag" ] && [ "$readme_ok" = true ]; }; }; then published=true; fi
-            build=true
-            case "$EVENT" in
-              workflow_dispatch) [ "$published" = true ] && [ "$IN_FORCE" != true ] && build=false ;;
-              push) ;;  # v* tag: build every board; release/branch writes skip what already exists
-            esac
-            echo "$v: release $rtag exists=$rel, ${br:-<no board branch>}:$dir/ has '${have:-nothing}', readme section current=$readme_ok -> published=$published, build=$build"
-            echo "- \`$v\`: release \`$rtag\` exists=$rel, board branch \`${br:-none}\` has \`${have:-nothing}\`, readme current=$readme_ok -> build=$build" >> "$GITHUB_STEP_SUMMARY"
-            [ "$build" = true ] && todo+=("$v")
+              asset="speeduino-${label}-${v}"
+              if gh release view "$asset" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then rel=true; else rel=false; fi
+              # Board branch carries the release firmware only. Master releases are separate.
+              br=""; dir=""; readme=""; have=""; readme_ok=true
+              if [ "$track" = release ] && [ -f "$bj" ]; then
+                br=$(jq -r '.firmware_branch // empty' "$bj")
+                dir=$(jq -r '.firmware_dir // "speeduino"' "$bj")
+                readme=$(jq -r '.firmware_readme // empty' "$bj")
+                if [ -n "$br" ]; then
+                  have=$(gh api -H 'Accept: application/vnd.github.raw' "repos/$GITHUB_REPOSITORY/contents/$dir/build-info.json?ref=$br" 2>/dev/null \
+                         | jq -r '.speeduino_tag // empty' 2>/dev/null || true)
+                  if [ -n "$readme" ]; then
+                    gh api -H 'Accept: application/vnd.github.raw' "repos/$GITHUB_REPOSITORY/contents/$readme?ref=$br" > /tmp/fw-readme 2>/dev/null || : > /tmp/fw-readme
+                    python3 scripts/speeduino/readme_section.py current /tmp/fw-readme --tag "$ref" || readme_ok=false
+                  fi
+                fi
+              fi
+              published=false
+              if [ "$track" = release ]; then
+                if [ "$rel" = true ] && { [ -z "$br" ] || { [ "$have" = "$ref" ] && [ "$readme_ok" = true ]; }; }; then published=true; fi
+              else
+                [ "$rel" = true ] && published=true
+              fi
+              build=true
+              case "$EVENT" in
+                workflow_dispatch) [ "$published" = true ] && [ "$IN_FORCE" != true ] && build=false ;;
+                push) ;;  # v* tag: build every board x ref; release writes skip what already exists
+              esac
+              echo "$v $track: release $asset exists=$rel -> published=$published, build=$build"
+              echo "- \`$v\` \`$track\` (\`$ref\`): release \`$asset\` exists=$rel -> build=$build" >> "$GITHUB_STEP_SUMMARY"
+              if [ "$build" = true ]; then
+                items+=("$(jq -nc --arg variant "$v" --arg ref "$ref" --arg track "$track" --arg asset "$asset" --arg label "$label" \
+                  '{variant:$variant,ref:$ref,track:$track,asset:$asset,label:$label}')")
+              fi
+            done
           done
-          matrix=$(printf '%s\n' "${todo[@]+"${todo[@]}"}" | jq -R . | jq -sc 'map(select(length>0))')
+          if [ ${#items[@]} -eq 0 ]; then matrix='[]'; else matrix=$(printf '%s\n' "${items[@]}" | jq -sc .); fi
           {
-            echo "speeduino_tag=$tag"; echo "matrix=$matrix"
-            echo "any=$([ "$matrix" != "[]" ] && echo true || echo false)"; echo "publish=$publish"
+            echo "matrix=$matrix"
+            echo "any=$([ "$matrix" != "[]" ] && echo true || echo false)"
+            echo "publish=$publish"
+            echo "release_ref=$RELEASE_REF"
+            echo "master_ref=$MASTER_REF"
           } | tee -a "$GITHUB_OUTPUT"
-          echo "### Speeduino \`$tag\` ($EVENT): variants \`$matrix\`, publish=$publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Speeduino refs \`${refs[*]}\` ($EVENT), publish=$publish" >> "$GITHUB_STEP_SUMMARY"
 
   build:
-    name: Build speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+    name: Build ${{ matrix.asset }}
     needs: plan
     if: needs.plan.outputs.any == 'true'
     runs-on: ubuntu-latest
@@ -147,7 +187,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4   # shallow (depth 1)
 
@@ -161,7 +201,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.platformio
-          key: pio-${{ runner.os }}-${{ env.PLATFORMIO_VERSION }}-${{ env.STM32_PLATFORM }}-${{ needs.plan.outputs.speeduino_tag }}
+          key: pio-${{ runner.os }}-${{ env.PLATFORMIO_VERSION }}-${{ env.STM32_PLATFORM }}-${{ matrix.ref }}
           restore-keys: |
             pio-${{ runner.os }}-${{ env.PLATFORMIO_VERSION }}-${{ env.STM32_PLATFORM }}-
 
@@ -171,7 +211,7 @@ jobs:
       - name: Build (scripts/speeduino/build_speeduino.sh, same args as locally)
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          REF: ${{ needs.plan.outputs.speeduino_tag }}
+          REF: ${{ matrix.ref }}
           VARIANT: ${{ matrix.variant }}
         run: |
           set -o pipefail
@@ -191,7 +231,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: speeduino-build-log-${{ matrix.variant }}
+          name: speeduino-build-log-${{ matrix.asset }}
           path: ${{ runner.temp }}/build.log
           if-no-files-found: ignore
 
@@ -200,7 +240,7 @@ jobs:
         run: |
           sha256sum -c SHA256SUMS
           {
-            echo "### ${{ matrix.variant }} @ Speeduino ${{ needs.plan.outputs.speeduino_tag }}"
+            echo "### ${{ matrix.asset }}"
             echo '```'
             python3 -c 'import json; d=json.load(open("build-info.json")); [print("%s: %s" % (k, d[k])) for k in ("speeduino_commit","firmware_signature","ini_signature","ststm32_version","platformio_version","arm_gcc_version","flash_used_bytes","flash_used_pct","ram_used_bytes","ram_used_pct","build_date")]'
             cat SHA256SUMS
@@ -209,12 +249,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          name: ${{ matrix.asset }}
           path: out/${{ matrix.variant }}
           if-no-files-found: error
 
   release:
-    name: Release speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+    name: Release ${{ matrix.asset }}
     needs: [plan, build]
     if: needs.plan.outputs.publish == 'true' && needs.plan.outputs.any == 'true'
     runs-on: ubuntu-latest
@@ -223,11 +263,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci
       - uses: actions/download-artifact@v4
         with:
-          name: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          name: ${{ matrix.asset }}
           path: out
       - name: Verify checksums
         working-directory: out
@@ -235,8 +279,8 @@ jobs:
       - name: Publish GitHub Release (only if missing; an existing release is never modified)
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
-          SPEEDUINO_TAG: ${{ needs.plan.outputs.speeduino_tag }}
+          TAG: ${{ matrix.asset }}
+          SPEEDUINO_TAG: ${{ matrix.ref }}
           VARIANT: ${{ matrix.variant }}
         run: |
           set -euo pipefail
@@ -245,7 +289,8 @@ jobs:
             echo "release \`$TAG\` already exists - not modified" >> "$GITHUB_STEP_SUMMARY"; exit 0
           fi
           python3 - <<'PYEOF' > notes.md
-          import json
+          import json, os
+          tag = os.environ["TAG"]
           d = json.load(open("out/build-info.json"))
           print("Speeduino `%s` (%s) for OPF `%s`, built by speeduino-autobuild.yml from OPF_ECU `%s`." % (
               d["speeduino_tag"], d["speeduino_commit"][:10], d["board"], d["opf_ecu_commit"][:10]))
@@ -266,14 +311,14 @@ jobs:
           cat "$STAGE/SHA256SUMS" >> notes.md
           echo '```' >> notes.md
           gh release create "$TAG" --latest=false -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Speeduino $SPEEDUINO_TAG - $VARIANT" --notes-file notes.md "$STAGE"/*
+            --title "Speeduino ${{ matrix.label }} - $VARIANT" --notes-file notes.md "$STAGE"/*
 
   firmware-branch:
     # Commit the firmware files to the variant's board branch (e.g. core48_21:speeduino/) and regenerate the
     # readme SPEEDUINO section. dry_run: everything up to the guard runs, the planned change is printed, no commit.
     name: Board branch ${{ matrix.variant }}
     needs: [plan, build, release]
-    if: always() && needs.plan.outputs.any == 'true' && needs.build.result == 'success' && (needs.plan.outputs.publish != 'true' || needs.release.result == 'success')
+    if: always() && needs.plan.outputs.any == 'true' && needs.build.result == 'success' && (needs.plan.outputs.publish != 'true' || needs.release.result == 'success') && matrix.track == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -281,7 +326,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -305,7 +350,7 @@ jobs:
       - uses: actions/download-artifact@v4
         if: steps.map.outputs.branch != ''
         with:
-          name: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          name: ${{ matrix.asset }}
           path: out
       - uses: actions/checkout@v4
         id: br
@@ -328,8 +373,8 @@ jobs:
           README: ${{ steps.map.outputs.readme }}
           GH_TOKEN: ${{ github.token }}
           VARIANT: ${{ matrix.variant }}
-          SPEEDUINO_TAG: ${{ needs.plan.outputs.speeduino_tag }}
-          RELEASE_TAG: speeduino-${{ needs.plan.outputs.speeduino_tag }}-${{ matrix.variant }}
+          SPEEDUINO_TAG: ${{ matrix.ref }}
+          RELEASE_TAG: ${{ matrix.asset }}
           PUBLISH: ${{ needs.plan.outputs.publish }}
         run: |
           set -euo pipefail
