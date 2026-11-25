@@ -1,14 +1,15 @@
 {
   "board": "core48_21",
   "pio_env": "opf_core48_21",
-  "speeduino_repo": "noisymime/speeduino",
+  "speeduino_repo": "speeduino/speeduino",
   "speeduino_tag": "202501.7",
+  "asset_prefix": "speeduino-202501.7-core48_21",
   "speeduino_commit": "cd3d0e38d276a7bd087a9dc86fd976780539ce8f",
   "speeduino_commit_date": "2026-04-24T17:45:45+10:00",
-  "build_date": "2026-10-21T14:53:00Z",
+  "build_date": "2026-11-25T23:07:38Z",
   "firmware_signature": "speeduino 202501",
   "ini_signature": "speeduino 202501",
-  "opf_ecu_commit": "b781aa994d7055e391907b4390c05d7859c62e88",
+  "opf_ecu_commit": "e9511104d1561040912a580a3863ad52678ba813",
   "opf_build_dir_dirty": false,
   "platformio_version": "6.2.0",
   "platform_spec": "platformio/ststm32@19.5.0",
@@ -26,9 +27,9 @@
     "elapsedMillis @ 1.0.6"
   ],
   "arm_gcc_version": "12.3.1",
-  "flash_used_bytes": 189632,
+  "flash_used_bytes": 187564,
   "flash_total_bytes": 1048576,
-  "flash_used_pct": 18.1,
+  "flash_used_pct": 17.9,
   "ram_used_bytes": 17324,
   "ram_total_bytes": 131072,
   "ram_used_pct": 13.2,
@@ -152,11 +153,17 @@
     "signature": "speeduino 202501"
   },
   "sha256": {
-    "speeduino_firmware.bin": "9be93bc78e0898d2c495a3e4c10a01d2eb204051b43d3ab7ecbf6b2e069a4e16",
-    "speeduino_firmware.elf": "1dbe76cc6366261cf9fe423ee817408a567411bf6064fcd539b63ac27febaad2",
-    "speeduino_firmware.hex": "448d4778fc80dc1d8041956306ce8a97670ef3d6cf31feda4cba7e85b1cd51d5",
+    "speeduino_firmware.bin": "dd68034bf29c884402364604c264c3dc3c918e575690a792c59177f273f9337b",
+    "speeduino_firmware.elf": "aae4ca75d63f6f15368b0a7eb9faa3f059f036a15721960d4717559b24c4aa03",
+    "speeduino_firmware.hex": "74f77831d8c76cefda26a7748ae8b3c56a1b6b2a299f7c0cf74ac3a8a8b26cd4",
     "speeduino_tunerstudio.ini": "3938058bc5c3a2823e4dbdfc635a0012be6491de86cfd5996ad08b320b2c3027",
     "base-map.msq": "21328315e0649bcf52a1f89ab818d717f76f11eb2bd47c65dd7950ecff3a6dc5",
-    "opf-core48_21-speeduino-202501.7.patch": "5d3db4eada2c767366ab2bde5b46147826a93977223f9134348825d7c13fb3a1"
+    "opf-core48_21-speeduino-202501.7.patch": "803a32ca0b224506cb0af2613d189caa5d33cc46e67aeda5c34836f660098ab0",
+    "speeduino-202501.7-core48_21.bin": "dd68034bf29c884402364604c264c3dc3c918e575690a792c59177f273f9337b",
+    "speeduino-202501.7-core48_21.elf": "aae4ca75d63f6f15368b0a7eb9faa3f059f036a15721960d4717559b24c4aa03",
+    "speeduino-202501.7-core48_21.hex": "74f77831d8c76cefda26a7748ae8b3c56a1b6b2a299f7c0cf74ac3a8a8b26cd4",
+    "speeduino-202501.7-core48_21.ini": "3938058bc5c3a2823e4dbdfc635a0012be6491de86cfd5996ad08b320b2c3027",
+    "speeduino-202501.7-core48_21-base.msq": "21328315e0649bcf52a1f89ab818d717f76f11eb2bd47c65dd7950ecff3a6dc5",
+    "speeduino-202501.7-core48_21.patch": "803a32ca0b224506cb0af2613d189caa5d33cc46e67aeda5c34836f660098ab0"
   }
 }
