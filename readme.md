@@ -38,6 +38,7 @@
 <!-- END LATEST DOWNLOAD BUTTON -->
 <!-- FOME:END -->
 
+<!-- RUSEFI:START -->
 ## RUSEFI Firmware
 (Right click and 'Save link as...')
 
@@ -52,6 +53,7 @@
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
 [![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_22/rusefi/rusefi_console.zip)
 <!-- END LATEST DOWNLOAD BUTTON -->
+<!-- RUSEFI:END -->
 
 ## Interactive Pinout Manual 
 
