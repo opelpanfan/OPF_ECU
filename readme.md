@@ -21,6 +21,7 @@
 
 ## Firmware
 
+<!-- FOME:START -->
 ## FOME (RUSEFI fork) Firmware
 (Right click and 'Save link as...')
 
@@ -35,6 +36,7 @@
 <!-- BEGIN LATEST DOWNLOAD BUTTON -->
 [![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download FOME Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_22/fome/fome_console.zip)
 <!-- END LATEST DOWNLOAD BUTTON -->
+<!-- FOME:END -->
 
 ## RUSEFI Firmware
 (Right click and 'Save link as...')
