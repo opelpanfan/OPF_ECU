@@ -23,6 +23,7 @@ targets are not present in the rusEFI, FOME, or Speeduino matrices.
 | `config/opf33/readme.md` | Generated V1.1 manual (release notes). Not the old retitled OPF48 pinout. |
 | `config/opf33_fome/` | FOME-specific OPF33 overlay (`compile_opf33.sh`, old FOME hook API) |
 | `tools/boardgen/` | Generates rusEFI/FOME overlays, the manual, and `docs/<board>.html` |
+| `scripts/docs/generate_pinout.py` | Regenerates interactive `docs/<board>.html` pinouts and the `<!-- PINOUT -->` section of `config/<board>/readme.md` from connector YAMLs |
 | `docs/opf33.html` | Generated 33-pin V1.1 pinout page. Live on GitHub Pages only after it is on `main`. |
 | `scripts/rusefi/` | Shared rusEFI build script (CI + local) |
 | `scripts/fome/` | Shared FOME build script (CI + local) |

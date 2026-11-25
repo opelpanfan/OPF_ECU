@@ -1,56 +1,114 @@
-<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
-<title>core8_24d — OPF pinout and firmware</title>
-<style>body{font-family:sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem}
-table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:.4rem .6rem;text-align:left}
-code{background:#f5f5f5;padding:0 .2rem}</style></head><body>
-<p><a href='index.html'>All boards</a></p>
-<h1>core8_24d</h1>
-<p>STM32F407 OPF board. rusEFI, FOME and Speeduino are all first-class firmwares for this hardware.</p>
-<h2>Firmware</h2>
-<table><thead><tr><th>Firmware</th><th>Pinned ref</th><th>Release tag</th><th>Board-branch artifacts</th></tr></thead><tbody>
-<tr><td>rusEFI</td><td><code>df128dec524d820bb767bcc503d8561ef01e258c</code></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core8_24d'><code>rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core8_24d</code></a></td>
-<td><a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24d/rusefi/rusefi_firmware.bin'>bin</a>, <a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24d/rusefi/rusefi_tunerstudio.ini'>ini</a></td></tr>
-<tr><td>FOME</td><td><code>3b772a890ae0703793b14f08822c20f34b386b8c</code></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core8_24d'><code>fome-3b772a890ae0703793b14f08822c20f34b386b8c-core8_24d</code></a></td>
-<td><a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24d/fome/fome.bin'>bin</a>, <a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24d/fome/fome_tunerstudio.ini'>ini</a> — first install via DFU, later updates via OpenBLT <code>.update.srec</code></td></tr>
-<tr><td>Speeduino</td><td><code>202501.7</code></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core8_24d'><code>speeduino-202501.7-core8_24d</code></a></td>
-<td><a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24d/speeduino/speeduino_firmware.bin'>bin</a>, <a href='https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core8_24d/speeduino/speeduino_tunerstudio.ini'>ini</a></td></tr>
-</tbody></table>
-<p>Release assets use the tag as a filename prefix (<code>&lt;tag&gt;.bin</code>, <code>&lt;tag&gt;.ini</code>, <code>&lt;tag&gt;-base.msq</code>). A tag link 404s until that board has been published. Load the matching TunerStudio ini from the same release. Some boards do not yet have a dedicated board branch; artifacts then exist only on the GitHub Release.</p>
-<h2>Speeduino pin map</h2>
-<p>From <code>scripts/speeduino/board-overlay/core8_24d/board.json</code>, ported from this board's config so it matches rusEFI/FOME.</p>
-<table><thead><tr><th>Function</th><th>Pin</th></tr></thead><tbody>
-<tr><td><code>pinBat</code></td><td><code>PA0</code></td></tr>
-<tr><td><code>pinBoost</code></td><td><code>PG5</code></td></tr>
-<tr><td><code>pinCLT</code></td><td><code>PB0</code></td></tr>
-<tr><td><code>pinCoil1</code></td><td><code>PE15</code></td></tr>
-<tr><td><code>pinCoil2</code></td><td><code>PE14</code></td></tr>
-<tr><td><code>pinCoil3</code></td><td><code>PE13</code></td></tr>
-<tr><td><code>pinCoil4</code></td><td><code>PE12</code></td></tr>
-<tr><td><code>pinCoil5</code></td><td><code>PE11</code></td></tr>
-<tr><td><code>pinCoil6</code></td><td><code>PF15</code></td></tr>
-<tr><td><code>pinCoil7</code></td><td><code>PG0</code></td></tr>
-<tr><td><code>pinCoil8</code></td><td><code>PG1</code></td></tr>
-<tr><td><code>pinFan</code></td><td><code>PG4</code></td></tr>
-<tr><td><code>pinFuelPressure</code></td><td><code>PA5</code></td></tr>
-<tr><td><code>pinFuelPump</code></td><td><code>PG3</code></td></tr>
-<tr><td><code>pinIAT</code></td><td><code>PA7</code></td></tr>
-<tr><td><code>pinIdle1</code></td><td><code>PG6</code></td></tr>
-<tr><td><code>pinInjector1</code></td><td><code>PF13</code></td></tr>
-<tr><td><code>pinInjector2</code></td><td><code>PF14</code></td></tr>
-<tr><td><code>pinInjector3</code></td><td><code>PD8</code></td></tr>
-<tr><td><code>pinInjector4</code></td><td><code>PD9</code></td></tr>
-<tr><td><code>pinInjector5</code></td><td><code>PD10</code></td></tr>
-<tr><td><code>pinInjector6</code></td><td><code>PD11</code></td></tr>
-<tr><td><code>pinInjector7</code></td><td><code>PD12</code></td></tr>
-<tr><td><code>pinInjector8</code></td><td><code>PD13</code></td></tr>
-<tr><td><code>pinMAP</code></td><td><code>PA5</code></td></tr>
-<tr><td><code>pinO2</code></td><td><code>PC1</code></td></tr>
-<tr><td><code>pinO2_2</code></td><td><code>PC2</code></td></tr>
-<tr><td><code>pinOilPressure</code></td><td><code>PC4</code></td></tr>
-<tr><td><code>pinTPS</code></td><td><code>PC5</code></td></tr>
-<tr><td><code>pinTachOut</code></td><td><code>PD14</code></td></tr>
-<tr><td><code>pinTrigger</code></td><td><code>PE2</code></td></tr>
-<tr><td><code>pinTrigger2</code></td><td><code>PE3</code></td></tr>
-<tr><td><code>pinVVT_1</code></td><td><code>PG7</code></td></tr>
-</tbody></table>
-</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPF core8_24d (STM32F407) pinout</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: Arial, Helvetica, sans-serif; margin: 1rem; line-height: 1.4; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  .meta, .note { max-width: 70rem; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.8rem 0; }
+  input[type="search"] { min-width: 16rem; padding: 0.4rem 0.5rem; }
+  button.filter { padding: 0.3rem 0.6rem; cursor: pointer; }
+  button.filter.active { outline: 2px solid currentColor; }
+  table { border-collapse: collapse; width: 100%; max-width: 80rem; }
+  th, td { border: 1px solid #888; padding: 0.35rem 0.45rem; text-align: left; vertical-align: top; }
+  th { position: sticky; top: 0; background: #222; color: #fff; }
+  tr.pin { cursor: pointer; }
+  tr.pin:hover { background: rgba(80,140,220,0.15); }
+  tr.detail { display: none; background: rgba(80,140,220,0.08); }
+  tr.detail.open { display: table-row; }
+  td.unknown { opacity: 0.75; }
+  code { font-size: 0.92em; }
+</style>
+</head>
+<body>
+<p><a href="index.html">All boards</a> · <a href="../config/core8_24d/readme.md">config/core8_24d/readme.md</a></p>
+<h1>OPF core8_24d (STM32F407)</h1>
+<p class="meta">MCU: <code>STM32F407xx</code>. Interactive pinout generated from <code>config/core8_24d/connectors/*.yaml</code>. Firmware columns are filled only when that MCU pin is assigned in the repo's pin map.</p>
+<p class="note">Sources:</p>
+<ul><li><code>rusEFI</code>: <code>config/core8_24d/board_configuration.cpp</code></li><li><code>FOME</code>: <code>config/core8_24d/board_configuration.cpp</code></li><li><code>Speeduino</code>: <code>scripts/speeduino/board-overlay/core8_24d/board.json</code></li></ul>
+<div class="toolbar">
+  <input id="q" type="search" placeholder="Search pin, function, MCU, firmware" aria-label="Filter pins">
+  <span id="filters"></span>
+  <span id="count"></span>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th>Connector</th><th>Pin</th><th>Id</th><th>Function</th><th>Type</th><th>Class</th>
+      <th>TunerStudio name</th><th>rusEFI</th><th>FOME</th><th>Speeduino</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+<script id="pin-data" type="application/json">{"board": "core8_24d", "pins": [{"connector": "main", "index": 1, "id": "F13", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 1 (F13)", "color": "", "mcu": ["PF13"], "rusefi": "PF13: injectionPins[0]", "fome": "PF13: injectionPins[0]", "speeduino": "PF13: pinInjector1=PF13", "extra": {}}, {"connector": "main", "index": 2, "id": "F14", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 2 (F14)", "color": "", "mcu": ["PF14"], "rusefi": "PF14: injectionPins[1]", "fome": "PF14: injectionPins[1]", "speeduino": "PF14: pinInjector2=PF14", "extra": {}}, {"connector": "main", "index": 3, "id": "D8", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 3 (D8)", "color": "", "mcu": ["PD8"], "rusefi": "PD8: injectionPins[2]", "fome": "PD8: injectionPins[2]", "speeduino": "PD8: pinInjector3=PD8", "extra": {}}, {"connector": "main", "index": 4, "id": "D9", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 4 (D9)", "color": "", "mcu": ["PD9"], "rusefi": "PD9: injectionPins[3]", "fome": "PD9: injectionPins[3]", "speeduino": "PD9: pinInjector4=PD9", "extra": {}}, {"connector": "main", "index": 5, "id": "D10", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 5 (D10)", "color": "", "mcu": ["PD10"], "rusefi": "PD10: injectionPins[4]", "fome": "PD10: injectionPins[4]", "speeduino": "PD10: pinInjector5=PD10", "extra": {}}, {"connector": "main", "index": 6, "id": "D11", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 6 (D11)", "color": "", "mcu": ["PD11"], "rusefi": "PD11: injectionPins[5]", "fome": "PD11: injectionPins[5]", "speeduino": "PD11: pinInjector6=PD11", "extra": {}}, {"connector": "main", "index": 7, "id": "D12", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 7 (D12)", "color": "", "mcu": ["PD12"], "rusefi": "PD12: injectionPins[6]", "fome": "PD12: injectionPins[6]", "speeduino": "PD12: pinInjector7=PD12", "extra": {}}, {"connector": "main", "index": 8, "id": "D13", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 8 (D13)", "color": "", "mcu": ["PD13"], "rusefi": "PD13: injectionPins[7]", "fome": "PD13: injectionPins[7]", "speeduino": "PD13: pinInjector8=PD13", "extra": {}}, {"connector": "main", "index": 9, "id": "D14", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 9 (D14)", "color": "", "mcu": ["PD14"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PD14: pinTachOut=PD14", "extra": {}}, {"connector": "main", "index": 10, "id": "D15", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 10 (D15)", "color": "", "mcu": ["PD15"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 11, "id": "G2", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 11 (G2)", "color": "", "mcu": ["PG2"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 12, "id": "G3", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 12 (G3)", "color": "", "mcu": ["PG3"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PG3: pinFuelPump=PG3", "extra": {}}, {"connector": "main", "index": 13, "id": "G4", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 13 (G4)", "color": "", "mcu": ["PG4"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PG4: pinFan=PG4", "extra": {}}, {"connector": "main", "index": 14, "id": "G5", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 14 (G5)", "color": "", "mcu": ["PG5"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PG5: pinBoost=PG5", "extra": {}}, {"connector": "main", "index": 15, "id": "G6", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 15 (G6)", "color": "", "mcu": ["PG6"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PG6: pinIdle1=PG6", "extra": {}}, {"connector": "main", "index": 16, "id": "G7", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 16 (G7)", "color": "", "mcu": ["PG7"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PG7: pinVVT_1=PG7", "extra": {}}, {"connector": "main", "index": 17, "id": "G8", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 17 (G8)", "color": "", "mcu": ["PG8"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 18, "id": "C6", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 18 (C6)", "color": "", "mcu": ["PC6"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 19, "id": "C7", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 19 (C7)", "color": "", "mcu": ["PC7"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 20, "id": "A8", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 20 (A8)", "color": "", "mcu": ["PA8"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 21, "id": "D5", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 21 (D5)", "color": "", "mcu": ["PD5"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 22, "id": "D4", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 22 (D4)", "color": "", "mcu": ["PD4"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 23, "id": "D3", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 23 (D3)", "color": "", "mcu": ["PD3"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 24, "id": "A15", "function": "", "type": "", "class": "outputs", "ts_name": "Low Side 24 (A15)", "color": "", "mcu": ["PA15"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 25, "id": "E15", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 1 (E15)", "color": "", "mcu": ["PE15"], "rusefi": "PE15: ignitionPins[0]", "fome": "PE15: ignitionPins[0]", "speeduino": "PE15: pinCoil1=PE15", "extra": {}}, {"connector": "main", "index": 26, "id": "E14", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 2 (E14)", "color": "", "mcu": ["PE14"], "rusefi": "PE14: ignitionPins[1]", "fome": "PE14: ignitionPins[1]", "speeduino": "PE14: pinCoil2=PE14", "extra": {}}, {"connector": "main", "index": 27, "id": "E13", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 3 (E13)", "color": "", "mcu": ["PE13"], "rusefi": "PE13: ignitionPins[2]", "fome": "PE13: ignitionPins[2]", "speeduino": "PE13: pinCoil3=PE13", "extra": {}}, {"connector": "main", "index": 28, "id": "E12", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 4 (E12)", "color": "", "mcu": ["PE12"], "rusefi": "PE12: ignitionPins[3]", "fome": "PE12: ignitionPins[3]", "speeduino": "PE12: pinCoil4=PE12", "extra": {}}, {"connector": "main", "index": 29, "id": "E11", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 5 (E11)", "color": "", "mcu": ["PE11"], "rusefi": "PE11: ignitionPins[4]", "fome": "PE11: ignitionPins[4]", "speeduino": "PE11: pinCoil5=PE11", "extra": {}}, {"connector": "main", "index": 30, "id": "F15", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 6 (F15)", "color": "", "mcu": ["PF15"], "rusefi": "PF15: ignitionPins[5]", "fome": "PF15: ignitionPins[5]", "speeduino": "PF15: pinCoil6=PF15", "extra": {}}, {"connector": "main", "index": 31, "id": "G0", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 7 (G0)", "color": "", "mcu": ["PG0"], "rusefi": "PG0: ignitionPins[6]", "fome": "PG0: ignitionPins[6]", "speeduino": "PG0: pinCoil7=PG0", "extra": {}}, {"connector": "main", "index": 32, "id": "G1", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 8 (G1)", "color": "", "mcu": ["PG1"], "rusefi": "PG1: ignitionPins[7]", "fome": "PG1: ignitionPins[7]", "speeduino": "PG1: pinCoil8=PG1", "extra": {}}, {"connector": "main", "index": 33, "id": "E7", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 9 (E7)", "color": "", "mcu": ["PE7"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 34, "id": "E10", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 10 (E10)", "color": "", "mcu": ["PE10"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 35, "id": "E9", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 11 (E9)", "color": "", "mcu": ["PE9"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 36, "id": "E8", "function": "", "type": "", "class": "outputs", "ts_name": "High Side 12 (E8)", "color": "", "mcu": ["PE8"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 37, "id": "F7", "function": "", "type": "", "class": "outputs", "ts_name": "Stepper Direction (F7)", "color": "", "mcu": ["PF7"], "rusefi": "PF7: idle.stepperDirectionPin", "fome": "PF7: idle.stepperDirectionPin", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 38, "id": "F8", "function": "", "type": "", "class": "outputs", "ts_name": "Stepper Control (F8)", "color": "", "mcu": ["PF8"], "rusefi": "PF8: idle.stepperStepPin", "fome": "PF8: idle.stepperStepPin", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 39, "id": "F9", "function": "", "type": "", "class": "outputs", "ts_name": "Stepper Disable (F9)", "color": "", "mcu": ["PF9"], "rusefi": "PF9: stepperEnablePin", "fome": "PF9: stepperEnablePin", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 40, "id": "B7", "function": "", "type": "", "class": "outputs", "ts_name": "DBW Disable (B7)", "color": "", "mcu": ["PB7"], "rusefi": "PB7: etbIo[0].disablePin", "fome": "PB7: etbIo[0].disablePin", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 41, "id": "B8", "function": "", "type": "", "class": "outputs", "ts_name": "DBW Control (B8)", "color": "", "mcu": ["PB8"], "rusefi": "PB8: etbIo[0].controlPin", "fome": "PB8: etbIo[0].controlPin", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 42, "id": "B9", "function": "", "type": "", "class": "outputs", "ts_name": "DBW Direction (B9)", "color": "", "mcu": ["PB9"], "rusefi": "PB9: etbIo[0].directionPin1", "fome": "PB9: etbIo[0].directionPin1", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 43, "id": "EFI_ADC_0", "function": "", "type": "", "class": "analog_inputs", "ts_name": "On-board Battery Sense (A0)", "color": "", "mcu": ["PA0"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PA0: pinBat=PA0", "extra": {}}, {"connector": "main", "index": 44, "id": "EFI_ADC_1", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 1 (A1)", "color": "", "mcu": ["PA1"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 45, "id": "EFI_ADC_2", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 2 (A2)", "color": "", "mcu": ["PA2"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 46, "id": "EFI_ADC_3", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 3 (A3)", "color": "", "mcu": ["PA3"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 47, "id": "EFI_ADC_4", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 4 (A4)", "color": "", "mcu": ["PA4"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 48, "id": "EFI_ADC_5", "function": "", "type": "", "class": "analog_inputs", "ts_name": "On-board MAP (A5)", "color": "", "mcu": ["PA5"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PA5: pinFuelPressure=PA5; PA5: pinMAP=PA5", "extra": {}}, {"connector": "main", "index": 49, "id": "EFI_ADC_6", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 6 (A6)", "color": "", "mcu": ["PA6"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 50, "id": "EFI_ADC_7", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 7 (A7)", "color": "", "mcu": ["PA7"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PA7: pinIAT=PA7", "extra": {}}, {"connector": "main", "index": 51, "id": "EFI_ADC_8", "function": "", "type": "", "class": "analog_inputs", "ts_name": "On-board BARO (B0)", "color": "", "mcu": ["PB0"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PB0: pinCLT=PB0", "extra": {}}, {"connector": "main", "index": 52, "id": "EFI_ADC_9", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 9 (B1)", "color": "", "mcu": ["PB1"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 53, "id": "EFI_ADC_10", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 10 (C0)", "color": "", "mcu": ["PC0"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 54, "id": "EFI_ADC_11", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Primary On-board O2 (C1)", "color": "", "mcu": ["PC1"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PC1: pinO2=PC1", "extra": {}}, {"connector": "main", "index": 55, "id": "EFI_ADC_12", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Secondary On-board O2 (C2)", "color": "", "mcu": ["PC2"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PC2: pinO2_2=PC2", "extra": {}}, {"connector": "main", "index": 56, "id": "EFI_ADC_13", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 13 (C3)", "color": "", "mcu": ["PC3"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 57, "id": "EFI_ADC_14", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 14 (C4)", "color": "", "mcu": ["PC4"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PC4: pinOilPressure=PC4", "extra": {}}, {"connector": "main", "index": 58, "id": "EFI_ADC_15", "function": "", "type": "", "class": "analog_inputs", "ts_name": "Analog Inputs 15 (C5)", "color": "", "mcu": ["PC5"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PC5: pinTPS=PC5", "extra": {}}, {"connector": "main", "index": 59, "id": "[\"E2\", \"E2\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "VR/Hall 1 (E2)", "color": "", "mcu": ["PE2"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PE2: pinTrigger=PE2", "extra": {}}, {"connector": "main", "index": 60, "id": "[\"E3\", \"E3\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "VR/Hall 2 (E3)", "color": "", "mcu": ["PE3"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "PE3: pinTrigger2=PE3", "extra": {}}, {"connector": "main", "index": 61, "id": "[\"E4\", \"E4\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "VR/Hall 3 (E4)", "color": "", "mcu": ["PE4"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 62, "id": "[\"E5\", \"E5\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "VR/Hall 4 (E5)", "color": "", "mcu": ["PE5"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 63, "id": "[\"F5\", \"F5\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "Digital Input 1 (F5)", "color": "", "mcu": ["PF5"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 64, "id": "[\"F4\", \"F4\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "Digital Input 2 (F4)", "color": "", "mcu": ["PF4"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 65, "id": "[\"F3\", \"F3\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "Digital Input 3 (F3)", "color": "", "mcu": ["PF3"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 66, "id": "[\"F2\", \"F2\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "Digital Input 4 (F2)", "color": "", "mcu": ["PF2"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 67, "id": "[\"F1\", \"F1\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "Digital Input 5 (F1)", "color": "", "mcu": ["PF1"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 68, "id": "[\"F0\", \"F0\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "Digital Input 6 (F0)", "color": "", "mcu": ["PF0"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 69, "id": "[\"E6\", \"E6\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "Digital Input 7 (E6)", "color": "", "mcu": ["PE6"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}, {"connector": "main", "index": 70, "id": "[\"C13\", \"C13\"]", "function": "", "type": "", "class": "[\"switch_inputs\", \"event_inputs\"]", "ts_name": "Digital Input 8 (C13)", "color": "", "mcu": ["PC13"], "rusefi": "unknown (not assigned in the firmware pin map)", "fome": "unknown (not assigned in the firmware pin map)", "speeduino": "unknown (not assigned in the firmware pin map)", "extra": {}}]}</script>
+<script>
+const data = JSON.parse(document.getElementById("pin-data").textContent);
+const tbody = document.getElementById("rows");
+const q = document.getElementById("q");
+const filters = document.getElementById("filters");
+const count = document.getElementById("count");
+const classes = Array.from(new Set(data.pins.map(p => p.class).filter(Boolean))).sort();
+let active = "all";
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+}
+function cell(text) {
+  const unknown = !text || String(text).indexOf("unknown") === 0;
+  return '<td class="' + (unknown ? "unknown" : "") + '">' + esc(text || "unknown") + "</td>";
+}
+function matches(p) {
+  if (active !== "all" && p.class !== active) return false;
+  const needle = q.value.trim().toLowerCase();
+  if (!needle) return true;
+  const blob = [p.connector, p.index, p.id, p.function, p.type, p.class, p.ts_name, p.color, (p.mcu || []).join(" "), p.rusefi, p.fome, p.speeduino, JSON.stringify(p.extra)].join(" ").toLowerCase();
+  return blob.indexOf(needle) !== -1;
+}
+function render() {
+  const pins = data.pins.filter(matches);
+  tbody.innerHTML = pins.map((p, i) => {
+    const id = "d" + i;
+    const main = "<tr class=\"pin\" data-detail=\"" + id + "\">" +
+      "<td>" + esc(p.connector) + "</td>" +
+      "<td>" + esc(p.index) + "</td>" +
+      cell(p.id) + cell(p.function) + cell(p.type) + cell(p.class) + cell(p.ts_name) +
+      cell(p.rusefi) + cell(p.fome) + cell(p.speeduino) + "</tr>";
+    const extra = Object.keys(p.extra).map(k => "<div><code>" + esc(k) + "</code>: " + esc(p.extra[k]) + "</div>").join("");
+    const detail = "<tr class=\"detail\" id=\"" + id + "\"><td colspan=\"10\">" +
+      "<div>MCU pin from YAML: <code>" + esc((p.mcu || []).join(", ") || "unknown") + "</code></div>" +
+      "<div>Color: " + esc(p.color || "unknown") + "</div>" +
+      extra +
+      "<div>Click the row again to hide this detail.</div></td></tr>";
+    return main + detail;
+  }).join("");
+  count.textContent = pins.length + " / " + data.pins.length + " pins";
+  tbody.querySelectorAll("tr.pin").forEach(tr => {
+    tr.addEventListener("click", () => {
+      const row = document.getElementById(tr.dataset.detail);
+      row.classList.toggle("open");
+    });
+  });
+}
+function setFilter(name, button) {
+  active = name;
+  filters.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === button));
+  render();
+}
+const allBtn = document.createElement("button");
+allBtn.type = "button"; allBtn.className = "filter active"; allBtn.textContent = "all";
+allBtn.addEventListener("click", () => setFilter("all", allBtn));
+filters.appendChild(allBtn);
+classes.forEach(name => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "filter"; b.textContent = name;
+  b.addEventListener("click", () => setFilter(name, b));
+  filters.appendChild(b);
+});
+q.addEventListener("input", render);
+render();
+</script>
+</body>
+</html>

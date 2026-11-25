@@ -1,30 +1,24 @@
-<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
 <title>OPF ECU pinout and firmware</title>
-<style>body{font-family:sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem}
-table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.4rem .6rem;text-align:left}</style></head><body>
-<h1>OPF ECU boards (STM32F407)</h1>
-<p>Each board is built for rusEFI, FOME and Speeduino. Pinout pages and release tags live on this public repo. Firmware CI runs on the <code>master-grok</code> branch; GitHub Pages only serves files that are on <code>main</code>.</p>
-<table><thead><tr><th>Board</th><th>Pinout</th><th>rusEFI</th><th>FOME</th><th>Speeduino</th></tr></thead><tbody>
-<tr><td><code>core48_11</code></td><td><a href='core48_11.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core48_11'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core48_11'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core48_11'>Speeduino</a></td></tr>
-<tr><td><code>core48_20</code></td><td><a href='core48_20.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core48_20'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core48_20'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core48_20'>Speeduino</a></td></tr>
-<tr><td><code>core48_21</code></td><td><a href='core48_21.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core48_21'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core48_21'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core48_21'>Speeduino</a></td></tr>
-<tr><td><code>core8_21</code></td><td><a href='core8_21.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core8_21'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core8_21'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core8_21'>Speeduino</a></td></tr>
-<tr><td><code>core8_23</code></td><td><a href='core8_23.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core8_23'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core8_23'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core8_23'>Speeduino</a></td></tr>
-<tr><td><code>core8_24ab</code></td><td><a href='core8_24ab.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core8_24ab'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core8_24ab'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core8_24ab'>Speeduino</a></td></tr>
-<tr><td><code>core8_24c</code></td><td><a href='core8_24c.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core8_24c'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core8_24c'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core8_24c'>Speeduino</a></td></tr>
-<tr><td><code>core8_24d</code></td><td><a href='core8_24d.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-core8_24d'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-core8_24d'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-core8_24d'>Speeduino</a></td></tr>
-<tr><td><code>opf33</code></td><td><a href='opf33.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-opf33'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-opf33'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-opf33'>Speeduino</a></td></tr>
-<tr><td><code>royalEFI</code></td><td><a href='royalEFI.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-royalEFI'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-royalEFI'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-royalEFI'>Speeduino</a></td></tr>
-<tr><td><code>royalEFI_spark</code></td><td><a href='royalEFI_spark.html'>pinout</a></td>
-<td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/rusefi-df128dec524d820bb767bcc503d8561ef01e258c-royalEFI_spark'>rusEFI</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/fome-3b772a890ae0703793b14f08822c20f34b386b8c-royalEFI_spark'>FOME</a></td><td><a href='https://github.com/opelpanfan/OPF_ECU/releases/tag/speeduino-202501.7-royalEFI_spark'>Speeduino</a></td></tr>
-</tbody></table></body></html>
+<style>body{font-family:sans-serif;max-width:60rem;margin:2rem auto;padding:0 1rem}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:.4rem .6rem;text-align:left}</style>
+</head><body>
+<h1>OPF ECU boards</h1>
+<p>Pinout pages are generated from <code>config/&lt;board&gt;/connectors/*.yaml</code> by <code>scripts/docs/generate_pinout.py</code>. Firmware release tags are linked from each board readme. GitHub Pages serves this file only after it is on <code>main</code>.</p>
+<table><thead><tr><th>Board</th><th>Description</th><th>Pinout</th><th>README</th></tr></thead>
+<tbody>
+<tr><td><code>core48_11</code></td><td>OPF core48_11 (STM32F407)</td><td><a href='core48_11.html'>pinout</a></td><td><a href='../config/core48_11/readme.md'>readme</a></td></tr>
+<tr><td><code>core48_20</code></td><td>OPF core48_20 (STM32F407)</td><td><a href='core48_20.html'>pinout</a></td><td><a href='../config/core48_20/readme.md'>readme</a></td></tr>
+<tr><td><code>core48_21</code></td><td>OPF core48 v2.1 (STM32F407ZGT6)</td><td><a href='core48_21.html'>pinout</a></td><td><a href='../config/core48_21/readme.md'>readme</a></td></tr>
+<tr><td><code>core48_22</code></td><td>OPF48 V2.2 core48_22 (STM32F407, royalEFI spec)</td><td><a href='core48_22.html'>pinout</a></td><td><a href='../config/core48_22/readme.md'>readme</a></td></tr>
+<tr><td><code>core8_21</code></td><td>OPF core8_21 (STM32F407)</td><td><a href='core8_21.html'>pinout</a></td><td><a href='../config/core8_21/readme.md'>readme</a></td></tr>
+<tr><td><code>core8_23</code></td><td>OPF core8_23 (STM32F407)</td><td><a href='core8_23.html'>pinout</a></td><td><a href='../config/core8_23/readme.md'>readme</a></td></tr>
+<tr><td><code>core8_24ab</code></td><td>OPF core8_24ab (STM32F407)</td><td><a href='core8_24ab.html'>pinout</a></td><td><a href='../config/core8_24ab/readme.md'>readme</a></td></tr>
+<tr><td><code>core8_24c</code></td><td>OPF core8_24c (STM32F407)</td><td><a href='core8_24c.html'>pinout</a></td><td><a href='../config/core8_24c/readme.md'>readme</a></td></tr>
+<tr><td><code>core8_24d</code></td><td>OPF core8_24d (STM32F407)</td><td><a href='core8_24d.html'>pinout</a></td><td><a href='../config/core8_24d/readme.md'>readme</a></td></tr>
+<tr><td><code>opf33</code></td><td>OPF33 V1.1 (STM32F407ZGT7)</td><td><a href='opf33.html'>pinout</a></td><td><a href='../config/opf33/readme.md'>readme</a></td></tr>
+<tr><td><code>royalEFI</code></td><td>OPF royalEFI (STM32F407)</td><td><a href='royalEFI.html'>pinout</a></td><td><a href='../config/royalEFI/readme.md'>readme</a></td></tr>
+<tr><td><code>royalEFI_spark</code></td><td>OPF royalEFI_spark (STM32F407)</td><td><a href='royalEFI_spark.html'>pinout</a></td><td><a href='../config/royalEFI_spark/readme.md'>readme</a></td></tr>
+</tbody></table>
+</body></html>
