@@ -5,5 +5,5 @@ fome_commit=477f9e471aaf5e29180a70dbc7230d259199b40a
 signature=rusEFI (FOME) 477f9e471a.2026.11.25.core48.2164621106
 toolchain=arm-gnu-toolchain-11.3.rel1-x86_64-arm-none-eabi
 config_source=scripts/fome/board-overlay/core48_20
-built_utc=2026-11-25T22:55:37Z
+built_utc=2026-11-25T23:01:47Z
 source_date_epoch=1795639302
