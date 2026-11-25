@@ -136,6 +136,8 @@ jobs:
       contents: write   # only used when publish=true (release + commit to the board branch)
     strategy:
       fail-fast: false
+      # Cap parallel Gradle startups. Twelve at once get HTTP 429 from Maven Central.
+      max-parallel: 4
       matrix:
         variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:

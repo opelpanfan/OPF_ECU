@@ -309,7 +309,7 @@ jobs:
           print()
           PYEOF
           STAGE="$RUNNER_TEMP/release-assets"
-          scripts/ci/stage_release_assets.sh "$TAG" out "$STAGE"
+          bash scripts/ci/stage_release_assets.sh "$TAG" out "$STAGE"
           echo '```' >> notes.md
           cat "$STAGE/SHA256SUMS" >> notes.md
           echo '```' >> notes.md

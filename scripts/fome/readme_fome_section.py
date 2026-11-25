@@ -71,12 +71,19 @@ def main():
         open(readme, 'wb').write(text.encode('utf-8'))
     elif sys.argv[1] == 'check':
         a, _ = read(sys.argv[2]); b, _ = read(sys.argv[3])
-        pa, pb = split(a), split(b)
-        strip = lambda p, t: (p[0].rstrip('\n'), p[2].lstrip('\n')) if p else (t, '')
+        def outside(text):
+            parts = split(text)
+            if not parts:
+                return text
+            return parts[0] + parts[2]
+        def norm(text):
+            return re.sub(r'\n{3,}', '\n\n', text).strip() + '\n'
         others = lambda t: [l for l in re.findall(r'<!-- *[A-Z0-9_]+:(?:START|END) *-->', t) if 'FOME:' not in l]
         if others(a) != others(b):
             print('readme.md: other sections\' markers changed', file=sys.stderr); sys.exit(1)
-        if strip(pa, a) != strip(pb, b):
+        # A first insert (no FOME block in the old readme) is allowed when the
+        # rest of the file is unchanged aside from blank lines around the insert.
+        if norm(outside(a)) != norm(outside(b)):
             print('readme.md changed outside the FOME section', file=sys.stderr); sys.exit(1)
     else:
         sys.exit(__doc__)

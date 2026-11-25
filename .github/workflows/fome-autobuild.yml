@@ -132,6 +132,7 @@ jobs:
       contents: write
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         variant: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
@@ -241,7 +242,7 @@ jobs:
           TAG="fome-${safe}-${VARIANT}"
           if gh release view "$TAG" >/dev/null 2>&1; then echo "release $TAG already exists, not overwriting"; exit 0; fi
           STAGE="$RUNNER_TEMP/release-assets"
-          scripts/ci/stage_release_assets.sh "$TAG" out "$STAGE"
+          bash scripts/ci/stage_release_assets.sh "$TAG" out "$STAGE"
           {
             echo "FOME firmware for \`$VARIANT\`, built from FOME-Tech/fome-fw \`$REF\` (\`${COMMIT:0:10}\`)."
             echo
