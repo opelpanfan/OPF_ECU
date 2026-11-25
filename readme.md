@@ -20,6 +20,23 @@
 
 ## Firmware
 
+<!-- FOME:START -->
+## FOME (RUSEFI fork) Firmware
+(Right click and 'Save link as...')
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download FOME Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI_spark/fome/fome_firmware.bin)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download FOME TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI_spark/fome/fome_tunerstudio.ini)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-FOME%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download FOME Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/royalEFI_spark/fome/fome_console.zip)
+<!-- END LATEST DOWNLOAD BUTTON -->
+<!-- FOME:END -->
+
 <!-- RUSEFI:START -->
 ## RUSEFI Firmware
 (Right click and 'Save link as...')
