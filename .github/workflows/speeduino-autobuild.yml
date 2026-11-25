@@ -66,6 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
+      release_matrix: ${{ steps.plan.outputs.release_matrix }}
       any: ${{ steps.plan.outputs.any }}
       publish: ${{ steps.plan.outputs.publish }}
       release_ref: ${{ steps.plan.outputs.release_ref }}
@@ -169,8 +170,10 @@ jobs:
             done
           done
           if [ ${#items[@]} -eq 0 ]; then matrix='[]'; else matrix=$(printf '%s\n' "${items[@]}" | jq -sc .); fi
+          release_matrix=$(printf '%s' "$matrix" | jq -c '[.[] | select(.track=="release")]')
           {
             echo "matrix=$matrix"
+            echo "release_matrix=$release_matrix"
             echo "any=$([ "$matrix" != "[]" ] && echo true || echo false)"
             echo "publish=$publish"
             echo "release_ref=$RELEASE_REF"
@@ -318,7 +321,7 @@ jobs:
     # readme SPEEDUINO section. dry_run: everything up to the guard runs, the planned change is printed, no commit.
     name: Board branch ${{ matrix.variant }}
     needs: [plan, build, release]
-    if: always() && needs.plan.outputs.any == 'true' && needs.build.result == 'success' && (needs.plan.outputs.publish != 'true' || needs.release.result == 'success') && matrix.track == 'release'
+    if: always() && needs.plan.outputs.release_matrix != '[]' && needs.build.result == 'success' && (needs.plan.outputs.publish != 'true' || needs.release.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -326,7 +329,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+        include: ${{ fromJSON(needs.plan.outputs.release_matrix) }}
     steps:
       - uses: actions/checkout@v4
         with:
