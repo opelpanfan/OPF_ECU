@@ -12,7 +12,8 @@ for f in "$OUT/$TAG".* "$OUT/$TAG"-*; do
   [ -e "$f" ] || continue
   cp "$f" "$STAGE/"; pref=1
 done
-copy() { [ -f "$1" ] && cp "$1" "$STAGE/$2"; }
+# `set -e` would abort the script when an optional asset is absent (`[ -f ] && cp` returns 1).
+copy() { if [ -f "$1" ]; then cp "$1" "$STAGE/$2"; fi; }
 if [ "$pref" -eq 0 ]; then
   copy "$OUT/fome.bin"              "$TAG.bin"
   copy "$OUT/fome.elf"              "$TAG.elf"
@@ -30,6 +31,11 @@ if [ "$pref" -eq 0 ]; then
   copy "$OUT/base-map.msq"               "$TAG-base.msq"
   copy "$OUT/build-info.json"            "$TAG.build-info.json"
   for f in "$OUT"/opf-*.patch; do copy "$f" "$TAG.patch"; done
+fi
+if [ ! -f "$STAGE/$TAG.bin" ]; then
+  echo "ERROR: $TAG.bin was not staged from $OUT" >&2
+  ls -la "$OUT" >&2 || true
+  exit 1
 fi
 # Always include a SHA256SUMS that matches the staged names.
 (cd "$STAGE" && sha256sum * 2>/dev/null | grep -v ' SHA256SUMS$' > SHA256SUMS || true)
