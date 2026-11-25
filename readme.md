@@ -289,3 +289,20 @@
 
 
 
+
+<!-- RUSEFI:START -->
+## RUSEFI Firmware
+(Right click and 'Save link as...')
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Firmware-blue?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Firmware")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/rusefi/rusefi_firmware.bin)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20TunerStudio%20INI-green?style=for-the-badge&logo=download&logoColor=white "Download RusEFI TunerStudio INI")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/rusefi/rusefi_tunerstudio.ini)
+<!-- END LATEST DOWNLOAD BUTTON -->
+
+<!-- BEGIN LATEST DOWNLOAD BUTTON -->
+[![Download zip](https://custom-icon-badges.demolab.com/badge/-RusEFI%20Console-purple?style=for-the-badge&logo=download&logoColor=white "Download RusEFI Console")](https://raw.githubusercontent.com/opelpanfan/OPF_ECU/core48_11/rusefi/rusefi_console.zip)
+<!-- END LATEST DOWNLOAD BUTTON -->
+<!-- RUSEFI:END -->
